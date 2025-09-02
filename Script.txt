@@ -1,1 +1,2 @@
 I'm here to perform git actions
+Git is useful

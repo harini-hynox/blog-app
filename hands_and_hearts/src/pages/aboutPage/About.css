@@ -1,0 +1,76 @@
+.about-page {
+  padding: 5% 2%;
+  background-color: #F3E8FF; /* soft cream */
+  color: #3D3D3D;
+  font-family: "Trebuchet MS", sans-serif;
+  line-height: 1.7;
+}
+
+/* Intro */
+.about-intro {
+  text-align: center;
+  margin-bottom: 2%;
+}
+
+.about-intro h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1.25rem;
+  color: #CDB4DB; /* pastel lavender */
+}
+
+.about-intro p {
+  font-size: 1.2rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.highlight {
+  color: #FF8C42; /* warm accent */
+  font-weight: bold;
+}
+
+/* Taglines */
+.about-taglines {
+  margin-bottom: 40px;
+}
+
+.about-taglines h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #CDB4DB; /* mint green */
+  text-align: center;
+}
+
+.about-taglines ul {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+}
+
+.about-taglines li {
+  margin: 1% 0;
+  font-style: italic;
+  font-size: 1.1rem;
+  color: #555;
+}
+
+/* Mission & Vision */
+.about-mission,
+.about-vision {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.about-mission h2,
+.about-vision h2 {
+  font-size: 2rem;
+  margin-bottom: 15px;
+  color:  #CDB4DB; /* peach accent */
+}
+
+.about-mission p,
+.about-vision p {
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto;
+}

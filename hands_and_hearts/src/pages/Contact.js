@@ -1,11 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom';
-import Navbar from '../../components/navBar/Navbar';
-import Footer from '../../components/footer/Footer';
-import emailIcon from './../../assests/gmail.png';
-import phoneIcon from './../../assests/phone.png';
-import locationIcon from './../../assests/location.png';
-
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+// import emailIcon from './../../../public/assests/gmail.png';
+// import phoneIcon from './../../../public/assests/phone.png';
+// import locationIcon from './../../../public/assests/location.png';
+// import Button from '@mui/material/Button';
 const Contact = () => {
   return (
     <div className="bg-[#F3E8FF] text-customGray font-[Trebuchet MS] text-center ">
@@ -23,19 +23,19 @@ const Contact = () => {
       {/* Contact Details */}
       <section className="flex flex-wrap justify-center gap-8 mb-10">
         <div className="bg-white p-5 md:p-8 rounded-xl shadow-md w-[250px] transition-transform duration-300 hover:-translate-y-1">
-          <img src={emailIcon} alt="email" className="w-10 h-10 mb-2 mx-auto" />
+          <img src='/assets/gmail.png' alt="email" className="w-10 h-10 mb-2 mx-auto" />
           <h3 className="mb-1 text-customGray">Email</h3>
           <p className="text-[1rem] text-[#666]">harini.crafts@gmail.com</p>
         </div>
 
         <div className="bg-white p-5 md:p-8 rounded-xl shadow-md w-[250px] transition-transform duration-300 hover:-translate-y-1">
-          <img src={phoneIcon} alt="phone" className="w-10 h-10 mb-2 mx-auto" />
+          <img src='/assets/phone.png' alt="phone" className="w-10 h-10 mb-2 mx-auto" />
           <h3 className="mb-1 text-customGray">Phone</h3>
           <p className="text-[1rem] text-[#666]">+91 98765 43210</p>
         </div>
 
         <div className="bg-white p-5 md:p-8 rounded-xl shadow-md w-[250px] transition-transform duration-300 hover:-translate-y-1">
-          <img src={locationIcon} alt="location" className="w-10 h-10 mb-2 mx-auto" />
+          <img src='/assets/location.png' alt="location" className="w-10 h-10 mb-2 mx-auto" />
           <h3 className="mb-1 text-customGray">Location</h3>
           <p className="text-[1rem] text-[#666]">Coimbatore, Tamil Nadu, India</p>
         </div>

@@ -1,5 +1,5 @@
-import Navbar from '../../components/navBar/Navbar';
-import Footer from '../../components/footer/Footer';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 
 const About = () => {
   return (

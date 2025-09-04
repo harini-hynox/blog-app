@@ -1,6 +1,3 @@
-import React  from 'react'
-import './Home.css';
-// import { Link } from 'react-router-dom';
 import Navbar from '../../components/navBar/Navbar';
 import FeaturesSlider from './../../components/featureSection/Feature';
 import Footer from './../../components/footer/Footer';
@@ -15,12 +12,12 @@ const Home = () => {
     
 
   return (
-    <div className='Home'>
-        <Navbar className='Home-navBar'/>
-        <FeaturesSlider  feature1={craft1} feature2={craft2} className='Home-featureSection'/>
-        <FeaturesSlider feature1={craft3} feature2={craft4} className='Home-featureSection'/>
-        <FeaturesSlider feature1={craft5} feature2={craft6} className='Home-featureSection'/>
-        <Footer className='Home-footer'/>
+    <div className="flex flex-col w-full h-screen">
+        <Navbar className="w-[100%] h-[35%]"/>
+        <FeaturesSlider  feature1={craft1} feature2={craft2} className="w-[30%] h-[30%]"/>
+        <FeaturesSlider feature1={craft3} feature2={craft4} className='w-[30%] h-[30%] '/>
+        <FeaturesSlider feature1={craft5} feature2={craft6} className='w-[30%] h-[30%] '/>
+        <Footer className='w-[105%] h-[15%] '/>
     </div>
   )
 }

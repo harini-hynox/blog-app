@@ -1,3 +1,0 @@
-I'm here to perform git actions
-Git is useful
-Git and GitHub are different

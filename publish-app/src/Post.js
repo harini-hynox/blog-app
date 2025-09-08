@@ -1,23 +1,29 @@
 import React, { useEffect, useState } from "react";
 import NavBar from "./components/NavBar";
+import Loader from "./Loader"; // 🔹 import loader
 
 function Posts() {
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true); // 🔹 loader state
 
   useEffect(() => {
     // Fetch API posts
     fetch("https://jsonplaceholder.typicode.com/posts")
       .then((res) => res.json())
       .then((data) => {
-        // Get posts from localStorage
         const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
-        // Combine API + stored posts
         setPosts([...storedPosts, ...data]);
+        setLoading(false); // ✅ stop loader after data loads
       })
-      .catch((err) => setError(err.message));
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, []);
+
+  if (loading) return <Loader />; // ✅ show loader while fetching
 
   if (error) {
     return <p className="text-red-500 p-4">⚠️ Error: {error}</p>;
@@ -58,7 +64,7 @@ function Posts() {
         <div className="w-[80%] md:w-[60%] lg:w-[50%] p-6">
           {searchTerm ? (
             <>
-              <h2 className="text-2xl font-bold mb-4"> Search Results</h2>
+              <h2 className="text-2xl font-bold mb-4">🔍 Search Results</h2>
               {filteredPosts.length > 0 ? (
                 <ul className="space-y-4">
                   {filteredPosts.map((post) => (

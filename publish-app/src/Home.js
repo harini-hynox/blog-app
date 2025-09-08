@@ -1,17 +1,26 @@
-import React, { useState } from "react";
+import React, { useState , useEffect} from "react";
 import NavBar from "./components/NavBar";
-
+import Loader from "./Loader";
 function Home({ onAddPost, onSearch }) {
-  const [searchTerm, setSearchTerm] = useState("");
+const [searchTerm, setSearchTerm] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [showNotification, setShowNotification] = useState(false);
+  const [loading, setLoading] = useState(true); // 🔹 loader state
+
+  useEffect(() => {
+    // Simulate page load for 2s
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     if (onSearch) {
-      onSearch(value); // only call if function exists
+      onSearch(value);
     }
   };
 
@@ -19,30 +28,19 @@ function Home({ onAddPost, onSearch }) {
     e.preventDefault();
     if (title.trim() && body.trim()) {
       const newPost = { id: Date.now(), title, body };
-
-      // Get existing posts from localStorage
       const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
-      // Add new post
       const updatedPosts = [newPost, ...storedPosts];
-      // Save back to localStorage
       localStorage.setItem("posts", JSON.stringify(updatedPosts));
-
-      // Reset form
       setTitle("");
       setBody("");
       setShowNotification(true);
-
-      // Hide after 3s
-      setTimeout(() => {
-        setShowNotification(false);
-      }, 3000);
+      setTimeout(() => setShowNotification(false), 3000);
     }
   };
 
-  // Load posts from localStorage
-  const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
+  if (loading) return <Loader />; // ✅ Loader here
 
-  // Filtered posts based on search term
+  const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
   const filteredPosts = storedPosts.filter(
     (post) =>
       post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

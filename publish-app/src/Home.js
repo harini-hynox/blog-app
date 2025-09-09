@@ -1,12 +1,14 @@
-import React, { useState , useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import NavBar from "./components/NavBar";
 import Loader from "./Loader";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 function Home({ onAddPost, onSearch }) {
-const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [showNotification, setShowNotification] = useState(false);
-  const [loading, setLoading] = useState(true); // 🔹 loader state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Simulate page load for 2s
@@ -15,14 +17,6 @@ const [searchTerm, setSearchTerm] = useState("");
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
-
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (onSearch) {
-      onSearch(value);
-    }
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -33,12 +27,23 @@ const [searchTerm, setSearchTerm] = useState("");
       localStorage.setItem("posts", JSON.stringify(updatedPosts));
       setTitle("");
       setBody("");
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
+
+      // 🔹 show success notification
+      toast.success("Successfully Posted!", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        // theme: "light",
+        className: "!bg-[#d2f0fc] !font-bold !font-sans !text-base !text-[#052C65]",
+      });
+
     }
   };
 
-  if (loading) return <Loader />; // ✅ Loader here
+  if (loading) return <Loader />;
 
   const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
   const filteredPosts = storedPosts.filter(
@@ -51,12 +56,8 @@ const [searchTerm, setSearchTerm] = useState("");
     <div className="w-screen h-screen gap-8 flex flex-col bg-[#CDD6F6] overflow-y-auto">
       <NavBar className=" w-full h-25% " />
 
-      {/* Notification Popup */}
-      {showNotification && (
-        <div className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce">
-          ✅ Successfully Posted!
-        </div>
-      )}
+      {/*  Toast container (keep once per app) */}
+      <ToastContainer />
 
       {/* Hero / Banner Section */}
       <section className="h-15% w-full flex flex-col justify-center items-center">
@@ -74,7 +75,7 @@ const [searchTerm, setSearchTerm] = useState("");
           type="text"
           placeholder=" Search posts..."
           value={searchTerm}
-          onChange={handleSearch}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="w-[45%] p-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-indigo-500"
         />
         {searchTerm && (
@@ -141,7 +142,7 @@ const [searchTerm, setSearchTerm] = useState("");
       </section>
 
       {/* Stats Section */}
-      <section className="px-8 gap-8 h-[20%] flex  flex-row justify-center items-center grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+      <section className="px-8 h-[20%] flex-row justify-center items-center grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
         <div className="flex flex-col justify-center items-center w-[80%] h-[80%] bg-white shadow p-4 rounded-lg transform transition duration-300 hover:scale-105 hover:shadow-lg hover:bg-blue-50">
           <h3 className="text-2xl font-bold text-blue-600">100+</h3>
           <p className="text-gray-600">Posts Available</p>

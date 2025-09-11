@@ -13,12 +13,13 @@ function Profile() {
     email: user?.email || "",
     phone: user?.phone || "",
     interest: user?.interest || "",
+    profilePic: user?.profilePic || "", // ✅ profile pic
   });
 
   if (!user) {
     return (
       <div className="min-h-screen bg-[#eddac5]">
-        <Navbar /> {/* ✅ Navbar shown on guest view */}
+        <Navbar />
         <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow rounded-lg text-center">
           <h2 className="text-xl font-bold">Guest Profile 👤</h2>
           <p className="text-gray-600">You are not logged in.</p>
@@ -33,6 +34,15 @@ function Profile() {
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle profile pic upload
+  const handlePicChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setFormData({ ...formData, profilePic: imageUrl });
+    }
+  };
+
   // Save updated details
   const handleSave = () => {
     setIsEditing(false);
@@ -41,16 +51,34 @@ function Profile() {
 
   return (
     <div className="min-h-screen bg-[#eddac5]">
-      {/* ✅ Navbar at top */}
       <Navbar />
 
       {/* Profile Card */}
       <div className="max-w-lg mx-auto mt-10 p-6 bg-white shadow rounded-xl">
         {/* Profile Picture */}
         <div className="flex flex-col items-center">
-          <div className="w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-            <span className="text-gray-500">Pic</span>
-          </div>
+          <label className="relative w-28 h-28 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden cursor-pointer group">
+            {formData.profilePic ? (
+              <img
+                src={formData.profilePic}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-gray-500">Add Pic</span>
+            )}
+            {/* Hidden file input */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handlePicChange}
+              className="hidden"
+            />
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+              <span className="text-white text-sm">edit</span>
+            </div>
+          </label>
 
           {/* User Info */}
           <h2 className="text-xl font-bold mt-3">{formData.username}</h2>

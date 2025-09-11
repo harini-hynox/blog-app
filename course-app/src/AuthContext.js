@@ -6,6 +6,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
 
+  // Restore from localStorage on page reload
   useEffect(() => {
     const savedToken = localStorage.getItem("authToken");
     const savedUser = localStorage.getItem("authUser");
@@ -16,10 +17,13 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = (fakeToken, userData) => {
-    setToken(fakeToken);
+  // login now generates a unique token
+  const login = (userData) => {
+    const uniqueToken = crypto.randomUUID(); // generates unique token
+    setToken(uniqueToken);
     setUser(userData);
-    localStorage.setItem("authToken", fakeToken);
+
+    localStorage.setItem("authToken", uniqueToken);
     localStorage.setItem("authUser", JSON.stringify(userData));
   };
 
@@ -36,3 +40,5 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+export default AuthProvider;

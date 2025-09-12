@@ -2,7 +2,7 @@
 
 function Card({ image, name, duration }) {
   return (
-    <div className="w-[40%] p-4 bg-white rounded-2xl shadow-md text-center h-[45%] bg-[#cdd6f6]">
+    <div className="w-[40%] p-4  rounded-2xl shadow-md text-center h-[45%] bg-[#cdd6f6]">
         <div className="flex flex-col items-center h-[75%] ">
       {/* Image */}
       <img

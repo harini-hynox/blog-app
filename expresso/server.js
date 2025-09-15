@@ -1,7 +1,7 @@
 // Import express
 const express = require('express');
 
-// Initialize app
+// Initialized app
 const app = express();
 
 // Define a port

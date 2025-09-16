@@ -139,7 +139,7 @@ const Task = () => {
   );
 
   return (
-    <div className="flex flex-col items-center w-screen h-auto bg-customPurple">
+    <div className="flex flex-col items-center w-screen min-h-screen bg-customPurple">
       <NavBar className="h-[15%]" />
       <div className="px-4 py-6 w-full">
         {/* 🔍 Search bar */}

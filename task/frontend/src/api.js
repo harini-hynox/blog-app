@@ -1,7 +1,14 @@
+// src/api.js
 import axios from "axios";
 
+// Local backend API
 const API = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
 });
 
-export default API;
+// External API
+const ExternalAPI = axios.create({
+  baseURL: process.env.REACT_APP_EXTERNAL_API || "https://jsonplaceholder.typicode.com", // example
+});
+
+export { API, ExternalAPI }; // ✅ named exports

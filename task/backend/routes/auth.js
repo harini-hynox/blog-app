@@ -5,14 +5,15 @@ const User = require("../models/User");
 const auth = require("../middleware/auth");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "secret123";
+const JWT_SECRET = process.env.JWT_SECRET; // get from .env
 
 // Signup
 router.post("/signup", async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    if (!username || !email || !password)
+    if (!username || !email || !password) {
       return res.status(400).json({ msg: "Please fill all fields" });
+    }
 
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ msg: "User already exists" });
@@ -32,8 +33,9 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password)
+    if (!email || !password) {
       return res.status(400).json({ msg: "Please provide email and password" });
+    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: "User not found" });
@@ -42,7 +44,11 @@ router.post("/login", async (req, res) => {
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+
+    res.json({
+      token,
+      user: { id: user._id, username: user.username, email: user.email },
+    });
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ msg: "Server error during login" });

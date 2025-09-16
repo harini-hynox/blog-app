@@ -1,19 +1,25 @@
-import React, { useState } from "react";
+import {BrowserRouter as Router, Route, Routes} from "react-router-dom";
 import Signup from "./Signup";
 import Login from "./Login";
+import Task from "./Task";
+import PrivateRoute from "./PrivateRoute";
 
 function App() {
-  const [page, setPage] = useState("signup");
-
   return (
-    <div>
-      <nav>
-        <button onClick={() => setPage("signup")}>Signup</button>
-        <button onClick={() => setPage("login")}>Login</button>
-      </nav>
-      <hr />
-      {page === "signup" ? <Signup /> : <Login />}
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Signup />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/task"
+          element={
+            <PrivateRoute>
+              <Task />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 

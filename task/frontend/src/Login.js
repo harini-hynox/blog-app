@@ -19,18 +19,20 @@ function Login() {
     e.preventDefault();
     setError("");
     setSuccess("");
+
     try {
-      const res = await API.post("/auth/login", form);
+      // ✅ send credentials with cookies
+      const res = await API.post("/auth/login", form, { withCredentials: true });
 
       setSuccess(`Welcome ${res.data.user.username}`);
 
-      // ✅ save user + token using AuthContext
-      login(res.data);
+      // ✅ store only user (no token in frontend)
+      login(res.data.user);
 
       // ✅ navigate to /task after short delay
       setTimeout(() => {
         navigate("/task");
-      }, 1500);
+      }, 1000);
     } catch (err) {
       setError(err.response?.data?.msg || "Login failed. Try again.");
     }
@@ -40,8 +42,13 @@ function Login() {
     <div className="flex flex-col items-center w-screen h-screen bg-customPurple">
       <NavBar className="h-[15%]" />
       <div className="h-[80%] flex flex-col items-center justify-center">
-        <h2 className="p-4 text-2xl font-bold font-sans text-customGray">Login</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4">
+        <h2 className="p-4 text-2xl font-bold font-sans text-customGray">
+          Login
+        </h2>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col items-center gap-4"
+        >
           <input
             name="email"
             type="email"

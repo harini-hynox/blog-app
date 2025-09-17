@@ -5,9 +5,9 @@ const User = require("../models/User");
 const auth = require("../middleware/auth");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET; // get from .env
+const JWT_SECRET = process.env.JWT_SECRET;
 
-// Signup
+// ------------------ Signup ------------------
 router.post("/signup", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -29,7 +29,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// Login
+// ------------------ Login ------------------
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -43,10 +43,19 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
+    // ✅ Generate JWT
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
 
+    // ✅ Store JWT in httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // only https in production
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1h
+    });
+
     res.json({
-      token,
+      msg: "Login successful ✅",
       user: { id: user._id, username: user.username, email: user.email },
     });
   } catch (err) {
@@ -55,7 +64,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Get logged-in user
+// ------------------ Get logged-in user ------------------
 router.get("/me", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -65,6 +74,16 @@ router.get("/me", auth, async (req, res) => {
     console.error("Get User Error:", err);
     res.status(500).json({ msg: "Server error fetching user" });
   }
+});
+
+// ------------------ Logout ------------------
+router.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.json({ msg: "Logged out successfully ✅" });
 });
 
 module.exports = router;

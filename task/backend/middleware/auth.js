@@ -1,24 +1,21 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-const JWT_SECRET = process.env.JWT_SECRET; // get from .env
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret";
 
-function auth(req, res, next) {
-  // token can come from x-auth-token header or Authorization: Bearer <token>
-  let token =
-    req.header("x-auth-token") || req.header("Authorization")?.split(" ")[1];
-
-  if (!token) {
-    return res.status(401).json({ msg: "No token, authorization denied" });
-  }
-
+const auth = async (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET); // verify token
-    req.user = decoded; // attach user data (id) to req
+    const token = req.cookies.token; //  read from cookie
+    if (!token) return res.status(401).json({ msg: "No token, authorization denied" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = await User.findById(decoded.id).select("-password");
+    if (!req.user) return res.status(404).json({ msg: "User not found" });
+
     next();
   } catch (err) {
-    console.error("Auth Error:", err);
-    res.status(401).json({ msg: "Invalid token" });
+    res.status(401).json({ msg: "Token is not valid" });
   }
-}
+};
 
 module.exports = auth;

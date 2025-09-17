@@ -1,45 +1,50 @@
 import React, { createContext, useState, useEffect } from "react";
-import { API } from "./api";  // ✅ named import
+import { API } from "./api"; 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [loading, setLoading] = useState(true);
 
-  // Verify token on mount
+  // 🔹 Verify session on mount (token is handled via httpOnly cookie on backend)
   useEffect(() => {
     const verifyUser = async () => {
-      if (token) {
-        try {
-          const res = await API.get("/auth/me", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setUser(res.data);
-        } catch (err) {
-          console.error("Auth check failed:", err);
-          logout();
-        }
+      try {
+        const res = await API.get("/auth/me", { withCredentials: true }); 
+        // ✅ "withCredentials" tells axios to send httpOnly cookies
+        setUser(res.data);
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        logout();
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     verifyUser();
-  }, [token]);
+  }, []);
 
-  const login = (data) => {
-    localStorage.setItem("token", data.token);
-    setToken(data.token);
-    setUser(data.user);
+  // 🔹 Login just updates React state, server sets cookie
+  const login = async (credentials) => {
+    try {
+      const res = await API.post("/auth/login", credentials, { withCredentials: true });
+      setUser(res.data.user);
+    } catch (err) {
+      console.error("Login failed:", err);
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    setToken("");
+  // 🔹 Logout clears session on server + React state
+  const logout = async () => {
+    try {
+      await API.post("/auth/logout", {}, { withCredentials: true });
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

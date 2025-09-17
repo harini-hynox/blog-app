@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import NavBar from "./components/navBar";
 import { API, ExternalAPI } from "./api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { AuthContext } from "./AuthContext";
 
 const Task = () => {
   const [search, setSearch] = useState("");
@@ -10,33 +11,32 @@ const Task = () => {
   const [body, setBody] = useState("");
   const [tasks, setTasks] = useState([]);
   const [externalPosts, setExternalPosts] = useState([]);
-
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
+  const { user } = useContext(AuthContext);
+  const token = localStorage.getItem("token");
 
-  // ✅ fetch local tasks from MongoDB
   const fetchTasks = async () => {
+    if (!token) return toast.error("Not authenticated ❌");
     try {
       const res = await API.get("/tasks", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setTasks(res.data);
     } catch (err) {
-      console.error("Error fetching tasks:", err);
+      console.error("Error fetching tasks:", err.response?.data || err.message);
+      toast.error("Failed to fetch tasks ❌");
     }
   };
 
-  // ✅ fetch external posts
   const fetchExternalPosts = async () => {
     try {
       const res = await ExternalAPI.get("/posts");
-      const posts = Array.isArray(res.data)
-        ? res.data
-        : res.data?.posts || [];
+      const posts = Array.isArray(res.data) ? res.data : res.data?.posts || [];
       setExternalPosts(posts);
     } catch (err) {
-      console.error("Error fetching external posts:", err);
+      console.error("Error fetching external posts:", err.response?.data || err.message);
       setExternalPosts([]);
     }
   };
@@ -46,17 +46,16 @@ const Task = () => {
     fetchExternalPosts();
   }, []);
 
-  // ✅ handle post creation
   const handleAddPost = async () => {
-    if (!title || !body) return;
+    if (!title || !body) return toast.error("Title and Body are required ❌");
+
     try {
       const res = await API.post(
         "/tasks",
-        { title, body },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        { title, description: body }, // Backend expects { title, description }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
       setTasks((prev) => [...prev, res.data]);
       setTitle("");
       setBody("");
@@ -67,19 +66,15 @@ const Task = () => {
     }
   };
 
-  // ✅ update a task
   const handleUpdateTask = async (id) => {
     try {
       const res = await API.put(
         `/tasks/${id}`,
-        { title: editTitle, body: editBody },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        { title: editTitle, description: editBody },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setTasks((prev) =>
-        prev.map((task) => (task._id === id ? res.data : task))
-      );
+
+      setTasks((prev) => prev.map((task) => (task._id === id ? res.data : task)));
       setEditingTaskId(null);
       setEditTitle("");
       setEditBody("");
@@ -90,7 +85,20 @@ const Task = () => {
     }
   };
 
-  // ✅ delete confirmation using toast
+  const handleDeleteTask = async (id) => {
+    try {
+      await API.delete(`/tasks/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setTasks((prev) => prev.filter((task) => task._id !== id));
+      toast.success("Task deleted 🗑️");
+    } catch (err) {
+      console.error("Error deleting task:", err.response?.data || err.message);
+      toast.error("Failed to delete task ❌");
+    }
+  };
+
   const confirmDelete = (id) => {
     toast(
       ({ closeToast }) => (
@@ -119,30 +127,16 @@ const Task = () => {
     );
   };
 
-  // ✅ delete a task
-  const handleDeleteTask = async (id) => {
-    try {
-      await API.delete(`/tasks/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setTasks((prev) => prev.filter((task) => task._id !== id));
-      toast.success("Task deleted 🗑️");
-    } catch (err) {
-      console.error("Error deleting task:", err.response?.data || err.message);
-      toast.error("Failed to delete task ❌");
-    }
-  };
-
-  // ✅ filter external posts by search
   const filteredPosts = externalPosts.filter((post) =>
     post.title?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="flex flex-col items-center w-screen min-h-screen bg-customPurple">
-      <NavBar className="h-[15%]" />
+    <div className="flex flex-col items-center w-screen min-h-screen bg-customLavender">
+      <NavBar page="task" className="h-[15%]" />
+
       <div className="px-4 py-6 w-full">
-        {/* 🔍 Search bar */}
+        {/* Search */}
         <div className="flex h-[5%] flex-row items-center justify-center mb-6">
           <input
             type="text"
@@ -153,7 +147,7 @@ const Task = () => {
           />
         </div>
 
-        {/* 📝 Post creation form */}
+        {/* Add Task */}
         <div className="flex flex-col h-[30%] items-center mb-6">
           <input
             type="text"
@@ -170,22 +164,19 @@ const Task = () => {
           />
           <button
             onClick={handleAddPost}
-            className="px-4 py-2 text-customGray bg-customLavender rounded-md hover:bg-white"
+            className="px-4 py-2 text-customGray bg-customPurple rounded-md hover:bg-white"
           >
             Add Post
           </button>
         </div>
 
-        {/* 📌 External posts */}
+        {/* External Posts */}
         <div className="h-[30%]">
           <h2 className="text-xl font-bold mb-2">External Posts</h2>
-          <div className="flex overflow-x-auto gap-4 p-4 bg-customLavender rounded-md">
-            {Array.isArray(filteredPosts) && filteredPosts.length > 0 ? (
+          <div className="flex overflow-x-auto gap-4 p-4 bg-customPurple rounded-md">
+            {filteredPosts.length ? (
               filteredPosts.map((post) => (
-                <div
-                  key={post.id || post._id}
-                  className="min-w-[250px] p-4 bg-white rounded-lg shadow-md"
-                >
+                <div key={post.id || post._id} className="min-w-[250px] p-4 bg-white rounded-lg shadow-md">
                   <h3 className="font-bold mb-2">{post.title}</h3>
                   <p>{post.body}</p>
                 </div>
@@ -196,16 +187,13 @@ const Task = () => {
           </div>
         </div>
 
-        {/* 📌 Local tasks */}
+        {/* Local Tasks */}
         <div className="h-[20%]">
           <h2 className="text-xl font-bold mt-6 mb-2">Your Tasks</h2>
-          <div className="bg-customLavender rounded-md p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-customPurple rounded-md p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tasks.length > 0 ? (
               tasks.map((task) => (
-                <div
-                  key={task._id}
-                  className="p-4 bg-white rounded-lg shadow-md flex flex-col gap-2"
-                >
+                <div key={task._id} className="p-4 bg-white rounded-lg shadow-md flex flex-col gap-2">
                   {editingTaskId === task._id ? (
                     <>
                       <input
@@ -237,13 +225,13 @@ const Task = () => {
                   ) : (
                     <>
                       <h3 className="font-bold">{task.title}</h3>
-                      <p>{task.body}</p>
+                      <p>{task.description}</p>
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={() => {
                             setEditingTaskId(task._id);
                             setEditTitle(task.title);
-                            setEditBody(task.body);
+                            setEditBody(task.description);
                           }}
                           className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                         >
@@ -267,7 +255,6 @@ const Task = () => {
         </div>
       </div>
 
-      {/* Toast Container */}
       <ToastContainer position="top-center" />
     </div>
   );

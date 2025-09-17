@@ -1,74 +1,59 @@
 const express = require("express");
-const Task = require("../models/Task");
 const auth = require("../middleware/auth");
+const Task = require("../models/Task");
 
 const router = express.Router();
 
-// Get all tasks for logged-in user
+// Create Task
+router.post("/", auth, async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const task = new Task({
+      title,
+      description,
+      userId: req.user.id,
+    });
+    await task.save();
+    res.status(201).json(task);
+  } catch (err) {
+    res.status(500).json({ message: "Error creating task", error: err.message });
+  }
+});
+
+// Get All User Tasks
 router.get("/", auth, async (req, res) => {
   try {
-    const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const tasks = await Task.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(tasks);
   } catch (err) {
-    console.error("Get Tasks Error:", err.message);
-    res.status(500).json({ msg: "Server error fetching tasks" });
+    res.status(500).json({ message: "Error fetching tasks", error: err.message });
   }
 });
 
-// Create a new task
-router.post("/", auth, async (req, res) => {
-  const { title, body } = req.body;
-  if (!title || !body) return res.status(400).json({ msg: "Please provide title and body" });
-
-  try {
-    const newTask = new Task({
-      user: req.user.id,
-      title,
-      body,
-    });
-    const task = await newTask.save();
-    res.json(task);
-  } catch (err) {
-    console.error("Add Task Error:", err.message);
-    res.status(500).json({ msg: "Server error creating task" });
-  }
-});
-
-// Update a task
+// Update Task
 router.put("/:id", auth, async (req, res) => {
-  const { title, body } = req.body;
   try {
-    let task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ msg: "Task not found" });
-
-    if (task.user.toString() !== req.user.id)
-      return res.status(401).json({ msg: "Unauthorized" });
-
-    task.title = title || task.title;
-    task.body = body || task.body;
-
-    await task.save();
+    const { title, description, completed } = req.body;
+    const task = await Task.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },
+      { title, description, completed },
+      { new: true }
+    );
+    if (!task) return res.status(404).json({ message: "Task not found" });
     res.json(task);
   } catch (err) {
-    console.error("Update Task Error:", err.message);
-    res.status(500).json({ msg: "Server error updating task" });
+    res.status(500).json({ message: "Error updating task", error: err.message });
   }
 });
 
-//  Delete a task
+// Delete Task
 router.delete("/:id", auth, async (req, res) => {
   try {
-    let task = await Task.findById(req.params.id);
-    if (!task) return res.status(404).json({ msg: "Task not found" });
-
-    if (task.user.toString() !== req.user.id)
-      return res.status(401).json({ msg: "Unauthorized" });
-
-    await task.remove();
-    res.json({ msg: "Task removed" });
+    const task = await Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    if (!task) return res.status(404).json({ message: "Task not found" });
+    res.json({ message: "Task deleted successfully" });
   } catch (err) {
-    console.error("Delete Task Error:", err.message);
-    res.status(500).json({ msg: "Server error deleting task" });
+    res.status(500).json({ message: "Error deleting task", error: err.message });
   }
 });
 

@@ -1,81 +1,90 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { API } from "./api";
+import { AuthContext } from "./AuthContext";
+import API from "./api";
 import NavBar from "./components/navBar";
-import { AuthContext } from "./AuthContext"; // ✅ import AuthContext
 
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext); // ✅ use AuthContext
+  const { login } = useContext(AuthContext);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+  e.preventDefault();
+  setError("");
 
-    try {
-      // ✅ send credentials with cookies
-      const res = await API.post("/auth/login", form, { withCredentials: true });
+  try {
+    console.log("📩 Login request:", form);
 
-      setSuccess(`Welcome ${res.data.user.username}`);
+    // ✅ Must match backend prefix
+    const res = await API.post("/auth/login", form);
 
-      // ✅ store only user (no token in frontend)
-      login(res.data.user);
+    console.log("✅ Login response:", res.data);
 
-      // ✅ navigate to /task after short delay
-      setTimeout(() => {
-        navigate("/task");
-      }, 1000);
-    } catch (err) {
-      setError(err.response?.data?.msg || "Login failed. Try again.");
+    const accessToken =
+      res.data?.accessToken || res.headers["x-access-token"];
+    const refreshToken =
+      res.data?.refreshToken || res.headers["x-refresh-token"];
+    const user = res.data?.user;
+
+    if (!accessToken || !refreshToken || !user) {
+      throw new Error("Login failed: Missing tokens or user in response");
     }
-  };
+
+    login(user, accessToken, refreshToken);
+
+    console.log("🔑 Saved Access Token:", accessToken);
+
+    navigate("/task");
+  } catch (err) {
+    console.error("❌ Login error:", err.response?.data || err.message);
+    setError(err.response?.data?.message || "Invalid email or password");
+  }
+};
+
 
   return (
-    <div className="flex flex-col items-center w-screen h-screen bg-customPurple">
-      <NavBar className="h-[15%]" />
-      <div className="h-[80%] flex flex-col items-center justify-center">
-        <h2 className="p-4 text-2xl font-bold font-sans text-customGray">
-          Login
-        </h2>
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col items-center gap-4"
-        >
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md"
-          />
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
-          >
+    <div>
+      <NavBar page="auth" />
+      <div className="flex justify-center items-center min-h-screen bg-customLavender">
+        <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
             Login
-          </button>
-        </form>
-        {success && <p className="text-green">{success}</p>}
-        {error && <p className="text-red">{error}</p>}
+          </h2>
+
+          {error && <p className="text-red-500 text-center mb-3">{error}</p>}
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <input
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              type="submit"
+              className="text-xl text-white bg-customGray border py-2 rounded-lg hover:bg-white hover:text-customGray transition"
+            >
+              Login
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

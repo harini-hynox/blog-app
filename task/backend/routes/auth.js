@@ -2,88 +2,151 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const auth = require("../middleware/auth");
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
 
-// ------------------ Signup ------------------
+// 🔹 Helper to generate tokens
+const generateTokens = (userId) => {
+  const accessToken = jwt.sign(
+    { id: userId },
+    process.env.JWT_ACCESS_SECRET,
+    { expiresIn: "1h" }
+  );
+
+  const refreshToken = jwt.sign(
+    { id: userId },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return { accessToken, refreshToken };
+};
+
+// 🔹 Signup
 router.post("/signup", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    console.log("📩 Signup request:", req.body);
+
+    let { username, email, password } = req.body;
     if (!username || !email || !password) {
-      return res.status(400).json({ msg: "Please fill all fields" });
+      return res.status(400).json({ message: "All fields required" });
     }
 
-    let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ msg: "User already exists" });
+    // normalize email
+    email = email.toLowerCase();
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    user = new User({ username, email, password: hashedPassword });
+
+    const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
-    res.status(201).json({ msg: "User registered successfully ✅" });
+    const { accessToken, refreshToken } = generateTokens(user._id);
+
+    user.accessToken = accessToken;
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res.setHeader("x-access-token", accessToken);
+    res.setHeader("x-refresh-token", refreshToken);
+
+    res.status(201).json({
+      message: "Signup successful",
+      user: { id: user._id, username: user.username, email: user.email },
+      accessToken,
+      refreshToken,
+    });
   } catch (err) {
-    console.error("Signup Error:", err);
-    res.status(500).json({ msg: "Server error during signup" });
+    console.error("❌ Signup error:", err);
+    res.status(500).json({ message: "Signup failed", error: err.message });
   }
 });
 
-// ------------------ Login ------------------
+// 🔹 Login
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ msg: "Please provide email and password" });
-    }
+    console.log("📩 Login request body:", req.body);
+
+    let { email, password } = req.body;
+    if (!email || !password)
+      return res.status(400).json({ message: "All fields required" });
+
+    // normalize email
+    email = email.toLowerCase();
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ msg: "User not found" });
+    console.log("🔎 Found user:", user ? user.email : "❌ not found");
+
+    if (!user) return res.status(400).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+    console.log("🔑 Password match:", isMatch);
 
-    // ✅ Generate JWT
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
-    // ✅ Store JWT in httpOnly cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // only https in production
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1h
-    });
+    const { accessToken, refreshToken } = generateTokens(user._id);
+
+    user.accessToken = accessToken;
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res.setHeader("x-access-token", accessToken);
+    res.setHeader("x-refresh-token", refreshToken);
 
     res.json({
-      msg: "Login successful ✅",
+      message: "Login successful",
       user: { id: user._id, username: user.username, email: user.email },
+      accessToken,
+      refreshToken,
     });
   } catch (err) {
-    console.error("Login Error:", err);
-    res.status(500).json({ msg: "Server error during login" });
+    console.error("❌ Login error:", err);
+    res.status(500).json({ message: "Login failed", error: err.message });
   }
 });
 
-// ------------------ Get logged-in user ------------------
-router.get("/me", auth, async (req, res) => {
+// 🔹 Refresh
+router.post("/refresh", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    if (!user) return res.status(404).json({ msg: "User not found" });
-    res.json(user);
-  } catch (err) {
-    console.error("Get User Error:", err);
-    res.status(500).json({ msg: "Server error fetching user" });
-  }
-});
+    const tokenFromHeader = req.headers["x-refresh-token"];
+    const { refreshToken } = req.body;
 
-// ------------------ Logout ------------------
-router.post("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  });
-  res.json({ msg: "Logged out successfully ✅" });
+    const token = tokenFromHeader || refreshToken;
+    if (!token) {
+      return res.status(401).json({ message: "No refresh token provided" });
+    }
+
+    const user = await User.findOne({ refreshToken: token });
+    if (!user) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    jwt.verify(token, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
+      if (err) return res.status(403).json({ message: "Invalid refresh token" });
+
+      const { accessToken, refreshToken: newRefreshToken } = generateTokens(
+        decoded.id
+      );
+
+      // 🔹 Update tokens in DB
+      user.accessToken = accessToken;
+      user.refreshToken = newRefreshToken;
+      await user.save();
+
+      // ✅ Send new tokens in both headers + body
+      res.setHeader("x-access-token", accessToken);
+      res.setHeader("x-refresh-token", newRefreshToken);
+
+      res.json({ accessToken, refreshToken: newRefreshToken });
+    });
+  } catch (err) {
+    console.error("❌ Refresh error:", err.message);
+    res.status(403).json({ message: "Invalid refresh token" });
+  }
 });
 
 module.exports = router;

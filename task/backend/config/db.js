@@ -1,14 +1,16 @@
 const mongoose = require("mongoose");
-require("dotenv").config(); // Load .env file
+require("dotenv").config();
 
 const connectDB = async () => {
   try {
-    // Use the connection string from .env
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/task", {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
     console.log("MongoDB Connected ✅");
   } catch (err) {
-    console.error("MongoDB connection error:", err.message);
-    process.exit(1); // Stop the app if DB connection fails
+    console.error("MongoDB connection failed ❌:", err.message);
+    process.exit(1);
   }
 };
 

@@ -1,25 +1,48 @@
-import { Link } from "react-router-dom";
+import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../AuthContext";
 
-const NavBar = () => {
+const NavBar = ({ page }) => {
+  const navigate = useNavigate();
+  const { logout } = useContext(AuthContext);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");  // Navigate after logout
+  };
+
   return (
-    <div className=" w-full flex flex-row items-center justify-between px-6 py-4 bg-customLavender ">
+    <nav className="w-full flex flex-row items-center justify-between px-6 py-4 bg-customPurple">
       <h4 className="text-2xl font-bold font-sans text-customGray">Task</h4>
 
-      <div className="flex gap-4 h-[90%]">
-        <Link
-          to="/"
-          className=" px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
-        >
-          Signup
-        </Link>
-        <Link
-          to="/login"
-          className="px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
-        >
-          Login
-        </Link>
+      <div className="flex gap-3">
+        {page === "auth" && (
+          <>
+            <button
+              className="px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
+              onClick={() => navigate("/login")}
+            >
+              Login
+            </button>
+            <button
+              className="px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
+              onClick={() => navigate("/")}
+            >
+              Signup
+            </button>
+          </>
+        )}
+
+        {page === "task" && (
+          <button
+            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        )}
       </div>
-    </div>
+    </nav>
   );
 };
 

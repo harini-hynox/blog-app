@@ -2,13 +2,10 @@ import { useContext } from "react";
 import { Navigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 
-const PrivateRoute = ({ children }) => {
+const PublicRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
-
   if (loading) return <p>Loading...</p>;
-
-  // ✅ If user exists, render children, otherwise redirect to login
-  return user ? children : <Navigate to="/login" replace />;
+  return user ? <Navigate to="/task" replace /> : children;
 };
 
-export default PrivateRoute;
+export default PublicRoute;

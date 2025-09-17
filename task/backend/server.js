@@ -1,29 +1,25 @@
-require("dotenv").config();
 const express = require("express");
+const dotenv = require("dotenv");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 
-const app = express();
+const authRoutes = require("./routes/auth");
+const taskRoutes = require("./routes/tasks");
 
-// ✅ Connect MongoDB
+dotenv.config();
 connectDB();
 
-// ✅ Middlewares
-app.use(cors({
-  origin: "http://localhost:3000",  // frontend URL
-  credentials: true,                // allow cookies
-}));
+const app = express();
+
+app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json());
-app.use(cookieParser());  // <-- important for cookies
+app.use(cookieParser());
 
-// ✅ Routes
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/tasks", require("./routes/tasks"));
+app.use("/auth", authRoutes);
+app.use("/tasks", taskRoutes);
 
-// ✅ Root check
-app.get("/", (req, res) => res.send("Backend is running!"));
+app.get("/", (req, res) => res.send("Hello Hynox API 🚀"));
 
-// ✅ Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -1,77 +1,83 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ import
-import { API } from "./api";
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "./AuthContext";
+import API from "./api";
 import NavBar from "./components/navBar";
 
 function Signup() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const navigate = useNavigate(); // ✅ hook
+  const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    try {
-      const res = await API.post("/auth/signup", form);
-      setSuccess(res.data.msg);
-      setForm({ username: "", email: "", password: "" });
+  e.preventDefault();
+  setError("");
 
-      // ✅ navigate to login after showing success
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500); // wait 1.5s so user can read message
-    } catch (err) {
-      setError(err.response?.data?.msg || "Signup failed. Try again.");
-    }
-  };
+  try {
+    // 🔹 Call backend signup
+    const res = await API.post("/auth/signup", form);
+
+    // ✅ Show success message from backend
+    console.log("✅ Signup success:", res.data.message);
+
+    // 🔹 Redirect to login page instead of auto-login
+    navigate("/login");
+  } catch (err) {
+    console.error("❌ Signup error:", err);
+    setError(err.response?.data?.message || err.message || "Signup failed");
+  }
+};
+
 
   return (
-    <div className="flex flex-col items-center w-screen h-screen bg-customPurple ">
-      <NavBar className="h-[15%]" />
-      <div className="h-[80%] flex flex-col items-center justify-center ">
-        <h2 className="p-4 text-2xl font-bold font-sans text-customGray">Signup</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 ">
-          <input
-            name="username"
-            placeholder="Username"
-            value={form.username}
-            onChange={handleChange}
-            required
-            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md"
-          />
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md"
-          />
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
-          >
+    <div>
+      <NavBar page="auth" />
+      <div className="flex justify-center items-center min-h-screen bg-customLavender">
+        <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
             Signup
-          </button>
-        </form>
-        {success && <p className="text-green">{success}</p>}
-        {error && <p className="text-red">{error}</p>}
+          </h2>
+          {error && <p className="text-red-500 text-center mb-3">{error}</p>}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <input
+              name="username"
+              type="text"
+              placeholder="Username"
+              value={form.username}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <input
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              type="submit"
+              className="text-xl text-white bg-customGray border py-2 rounded-lg hover:bg-white hover:text-customGray transition"
+            >
+              Signup
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

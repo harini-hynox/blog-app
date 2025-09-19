@@ -1,17 +1,17 @@
 import axios from "axios";
 
-// Backend API instance
+// 🔹 Backend API instance
 export const API = axios.create({
   baseURL: "http://localhost:5000", // backend server
   headers: { "Content-Type": "application/json" },
 });
 
-// External API instance
+// 🔹 External API instance
 export const ExternalAPI = axios.create({
   baseURL: "https://jsonplaceholder.typicode.com",
 });
 
-// Token Management
+// ---------------- TOKEN MANAGEMENT ----------------
 let accessToken = localStorage.getItem("accessToken") || null;
 let refreshToken = localStorage.getItem("refreshToken") || null;
 
@@ -32,7 +32,17 @@ const saveTokens = (res) => {
   }
 };
 
-// Request Interceptor
+// Clear all tokens
+const clearTokens = () => {
+  accessToken = null;
+  refreshToken = null;
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
+};
+
+// ---------------- INTERCEPTORS ----------------
+// Request Interceptor → attach token
 API.interceptors.request.use(
   (config) => {
     if (accessToken) {
@@ -43,17 +53,16 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor
+// Response Interceptor → handle token refresh
 API.interceptors.response.use(
   (res) => {
-    // Always save updated tokens if present
-    saveTokens(res);
+    saveTokens(res); // save updated tokens if present
     return res;
   },
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 with refresh
+    // If 401 and refresh token exists → try refreshing
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -66,7 +75,6 @@ API.interceptors.response.use(
           refreshToken,
         });
 
-        // Save fresh tokens
         saveTokens(res);
 
         // Retry original request with new access token
@@ -76,13 +84,9 @@ API.interceptors.response.use(
 
         return API(originalRequest);
       } catch (err) {
-        console.error("❌ Refresh token failed", err);
-
-        // Clear storage and tokens
-        accessToken = null;
-        refreshToken = null;
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
+        console.error("❌ Refresh token failed:", err.message);
+        clearTokens();
+        window.location.href = "/login"; // force logout
       }
     }
 

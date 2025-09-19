@@ -22,7 +22,7 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
-// 🔹 Signup
+// -------------------- SIGNUP --------------------
 router.post("/signup", async (req, res) => {
   try {
     console.log("📩 Signup request:", req.body);
@@ -32,7 +32,7 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    // normalize email
+    // Normalize email
     email = email.toLowerCase();
 
     const existingUser = await User.findOne({ email });
@@ -66,7 +66,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// 🔹 Login
+// -------------------- LOGIN --------------------
 router.post("/login", async (req, res) => {
   try {
     console.log("📩 Login request body:", req.body);
@@ -75,7 +75,6 @@ router.post("/login", async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "All fields required" });
 
-    // normalize email
     email = email.toLowerCase();
 
     const user = await User.findOne({ email });
@@ -109,7 +108,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// 🔹 Refresh
+// -------------------- REFRESH --------------------
 router.post("/refresh", async (req, res) => {
   try {
     const tokenFromHeader = req.headers["x-refresh-token"];
@@ -141,7 +140,11 @@ router.post("/refresh", async (req, res) => {
       res.setHeader("x-access-token", accessToken);
       res.setHeader("x-refresh-token", newRefreshToken);
 
-      res.json({ accessToken, refreshToken: newRefreshToken });
+      res.json({
+        message: "Token refreshed",
+        accessToken,
+        refreshToken: newRefreshToken,
+      });
     });
   } catch (err) {
     console.error("❌ Refresh error:", err.message);

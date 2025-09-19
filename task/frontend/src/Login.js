@@ -7,6 +7,7 @@ import NavBar from "./components/navBar";
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useContext(AuthContext);
 
@@ -14,38 +15,41 @@ function Login() {
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    console.log("📩 Login request:", form);
+    try {
+      console.log("📩 Login request:", form);
 
-    // ✅ Must match backend prefix
-    const res = await API.post("/auth/login", form);
+      // ✅ Send login request
+      const res = await API.post("/auth/login", form);
 
-    console.log("✅ Login response:", res.data);
+      console.log("✅ Login response:", res.data);
 
-    const accessToken =
-      res.data?.accessToken || res.headers["x-access-token"];
-    const refreshToken =
-      res.data?.refreshToken || res.headers["x-refresh-token"];
-    const user = res.data?.user;
+      const accessToken =
+        res.data?.accessToken || res.headers["x-access-token"];
+      const refreshToken =
+        res.data?.refreshToken || res.headers["x-refresh-token"];
+      const user = res.data?.user;
 
-    if (!accessToken || !refreshToken || !user) {
-      throw new Error("Login failed: Missing tokens or user in response");
+      if (!accessToken || !refreshToken || !user) {
+        throw new Error("Login failed: Missing tokens or user in response");
+      }
+
+      // ✅ Save tokens & user in AuthContext + localStorage
+      login(user, accessToken, refreshToken);
+
+      console.log("🔑 Saved Access Token:", accessToken);
+
+      navigate("/task");
+    } catch (err) {
+      console.error("❌ Login error:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "Invalid email or password");
+    } finally {
+      setLoading(false);
     }
-
-    login(user, accessToken, refreshToken);
-
-    console.log("🔑 Saved Access Token:", accessToken);
-
-    navigate("/task");
-  } catch (err) {
-    console.error("❌ Login error:", err.response?.data || err.message);
-    setError(err.response?.data?.message || "Invalid email or password");
-  }
-};
-
+  };
 
   return (
     <div>
@@ -77,11 +81,17 @@ function Login() {
               required
               className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
+
             <button
               type="submit"
-              className="text-xl text-white bg-customGray border py-2 rounded-lg hover:bg-white hover:text-customGray transition"
+              disabled={loading}
+              className={`text-xl text-white border py-2 rounded-lg transition ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-customGray hover:bg-white hover:text-customGray"
+              }`}
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
         </div>

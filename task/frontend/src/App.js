@@ -18,7 +18,7 @@ const PublicRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
 
   if (loading) return <p>Loading...</p>;
-  return !user ? children : <Navigate to="/task" replace />;
+  return !user ? children : <Navigate to="/tasks" replace />;
 };
 
 function App() {
@@ -26,7 +26,7 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes → accessible only if not logged in */}
+          {/* Public routes → accessible only if NOT logged in */}
           <Route
             path="/"
             element={
@@ -46,7 +46,7 @@ function App() {
 
           {/* Private routes → accessible only if logged in */}
           <Route
-            path="/task"
+            path="/tasks"
             element={
               <PrivateRoute>
                 <Task />
@@ -54,7 +54,7 @@ function App() {
             }
           />
 
-          {/* Catch-all redirect */}
+          {/* Catch-all → redirect to signup */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

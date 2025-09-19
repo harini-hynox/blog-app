@@ -15,14 +15,11 @@ const Task = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
   const { user } = useContext(AuthContext);
-  const token = localStorage.getItem("token");
 
+  // ✅ Fetch tasks
   const fetchTasks = async () => {
-    if (!token) return toast.error("Not authenticated ❌");
     try {
-      const res = await API.get("/tasks", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await API.get("/tasks");
       setTasks(res.data);
     } catch (err) {
       console.error("Error fetching tasks:", err.response?.data || err.message);
@@ -30,6 +27,7 @@ const Task = () => {
     }
   };
 
+  // ✅ Fetch external posts
   const fetchExternalPosts = async () => {
     try {
       const res = await ExternalAPI.get("/posts");
@@ -42,20 +40,18 @@ const Task = () => {
   };
 
   useEffect(() => {
-    fetchTasks();
-    fetchExternalPosts();
-  }, []);
+    if (user) {
+      fetchTasks();
+      fetchExternalPosts();
+    }
+  }, [user]);
 
+  // ✅ Add task
   const handleAddPost = async () => {
     if (!title || !body) return toast.error("Title and Body are required ❌");
 
     try {
-      const res = await API.post(
-        "/tasks",
-        { title, description: body }, // Backend expects { title, description }
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      const res = await API.post("/tasks", { title, description: body });
       setTasks((prev) => [...prev, res.data]);
       setTitle("");
       setBody("");
@@ -66,13 +62,13 @@ const Task = () => {
     }
   };
 
+  // ✅ Update task
   const handleUpdateTask = async (id) => {
     try {
-      const res = await API.put(
-        `/tasks/${id}`,
-        { title: editTitle, description: editBody },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await API.put(`/tasks/${id}`, {
+        title: editTitle,
+        description: editBody,
+      });
 
       setTasks((prev) => prev.map((task) => (task._id === id ? res.data : task)));
       setEditingTaskId(null);
@@ -85,12 +81,10 @@ const Task = () => {
     }
   };
 
+  // ✅ Delete task
   const handleDeleteTask = async (id) => {
     try {
-      await API.delete(`/tasks/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      await API.delete(`/tasks/${id}`);
       setTasks((prev) => prev.filter((task) => task._id !== id));
       toast.success("Task deleted 🗑️");
     } catch (err) {
@@ -99,12 +93,13 @@ const Task = () => {
     }
   };
 
+  // ✅ Confirm before delete
   const confirmDelete = (id) => {
     toast(
       ({ closeToast }) => (
         <div>
-          <p>Are you sure you want to delete this task?</p>
-          <div className="flex gap-2 mt-2">
+          <p className="font-semibold">Are you sure you want to delete this task?</p>
+          <div className="flex gap-2 mt-3">
             <button
               onClick={() => {
                 handleDeleteTask(id);
@@ -127,6 +122,7 @@ const Task = () => {
     );
   };
 
+  // ✅ Filter external posts
   const filteredPosts = externalPosts.filter((post) =>
     post.title?.toLowerCase().includes(search.toLowerCase())
   );
@@ -136,7 +132,7 @@ const Task = () => {
       <NavBar page="task" className="h-[15%]" />
 
       <div className="px-4 py-6 w-full">
-        {/* Search */}
+        {/* 🔍 Search */}
         <div className="flex h-[5%] flex-row items-center justify-center mb-6">
           <input
             type="text"
@@ -147,7 +143,7 @@ const Task = () => {
           />
         </div>
 
-        {/* Add Task */}
+        {/* ➕ Add Task */}
         <div className="flex flex-col h-[30%] items-center mb-6">
           <input
             type="text"
@@ -170,13 +166,16 @@ const Task = () => {
           </button>
         </div>
 
-        {/* External Posts */}
+        {/* 🌍 External Posts */}
         <div className="h-[30%]">
           <h2 className="text-xl font-bold mb-2">External Posts</h2>
           <div className="flex overflow-x-auto gap-4 p-4 bg-customPurple rounded-md">
             {filteredPosts.length ? (
               filteredPosts.map((post) => (
-                <div key={post.id || post._id} className="min-w-[250px] p-4 bg-white rounded-lg shadow-md">
+                <div
+                  key={post.id || post._id}
+                  className="min-w-[250px] p-4 bg-white rounded-lg shadow-md"
+                >
                   <h3 className="font-bold mb-2">{post.title}</h3>
                   <p>{post.body}</p>
                 </div>
@@ -187,13 +186,16 @@ const Task = () => {
           </div>
         </div>
 
-        {/* Local Tasks */}
+        {/* ✅ Local Tasks */}
         <div className="h-[20%]">
           <h2 className="text-xl font-bold mt-6 mb-2">Your Tasks</h2>
           <div className="bg-customPurple rounded-md p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {tasks.length > 0 ? (
               tasks.map((task) => (
-                <div key={task._id} className="p-4 bg-white rounded-lg shadow-md flex flex-col gap-2">
+                <div
+                  key={task._id}
+                  className="p-4 bg-white rounded-lg shadow-md flex flex-col gap-2"
+                >
                   {editingTaskId === task._id ? (
                     <>
                       <input

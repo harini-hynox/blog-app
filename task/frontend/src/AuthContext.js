@@ -19,10 +19,9 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // 🔹 Login → store tokens + user
-  const login = (userData, accessToken, refreshToken) => {
+  // 🔹 Login → store accessToken + user (❌ no refreshToken here)
+  const login = (userData, accessToken) => {
     if (accessToken) localStorage.setItem("accessToken", accessToken);
-    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
     if (userData) localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
   };
@@ -30,7 +29,6 @@ export const AuthProvider = ({ children }) => {
   // 🔹 Logout → clear everything
   const logout = () => {
     localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     setUser(null);
   };

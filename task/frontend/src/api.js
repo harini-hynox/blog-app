@@ -4,6 +4,7 @@ import axios from "axios";
 export const API = axios.create({
   baseURL: "http://localhost:5000", // backend server
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // ✅ important: allows cookies (refresh token stored in httpOnly cookie)
 });
 
 // 🔹 External API instance
@@ -13,36 +14,27 @@ export const ExternalAPI = axios.create({
 
 // ---------------- TOKEN MANAGEMENT ----------------
 let accessToken = localStorage.getItem("accessToken") || null;
-let refreshToken = localStorage.getItem("refreshToken") || null;
 
-// Save tokens from response
-const saveTokens = (res) => {
+// Save access token from response
+const saveAccessToken = (res) => {
   const newAccess =
     res.data?.accessToken || res.headers["x-access-token"] || null;
-  const newRefresh =
-    res.data?.refreshToken || res.headers["x-refresh-token"] || null;
 
   if (newAccess) {
     accessToken = newAccess;
     localStorage.setItem("accessToken", newAccess);
-  }
-  if (newRefresh) {
-    refreshToken = newRefresh;
-    localStorage.setItem("refreshToken", newRefresh);
   }
 };
 
 // Clear all tokens
 const clearTokens = () => {
   accessToken = null;
-  refreshToken = null;
   localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");
 };
 
 // ---------------- INTERCEPTORS ----------------
-// Request Interceptor → attach token
+// Request Interceptor → attach access token
 API.interceptors.request.use(
   (config) => {
     if (accessToken) {
@@ -53,29 +45,27 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor → handle token refresh
+// Response Interceptor → handle access token refresh via cookie
 API.interceptors.response.use(
   (res) => {
-    saveTokens(res); // save updated tokens if present
+    saveAccessToken(res); // save updated access token if present
     return res;
   },
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401 and refresh token exists → try refreshing
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      refreshToken
-    ) {
+    // If 401 → try refreshing using refresh token stored in cookie
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const res = await axios.post("http://localhost:5000/auth/refresh", {
-          refreshToken,
-        });
+        const res = await axios.post(
+          "http://localhost:5000/auth/refresh",
+          {},
+          { withCredentials: true } // ✅ send cookie automatically
+        );
 
-        saveTokens(res);
+        saveAccessToken(res);
 
         // Retry original request with new access token
         originalRequest.headers[

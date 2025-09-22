@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
+import API from "./api";
 
 export const AuthContext = createContext();
 
@@ -26,11 +27,20 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   };
 
-  // 🔹 Logout → clear everything
-  const logout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
-    setUser(null);
+  // 🔹 Logout → clear everything + call backend
+  const logout = async () => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      if (storedUser?.id) {
+        await API.post("/auth/logout", { userId: storedUser.id });
+      }
+    } catch (err) {
+      console.error("❌ Logout failed:", err.response?.data || err.message);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+      setUser(null);
+    }
   };
 
   return (

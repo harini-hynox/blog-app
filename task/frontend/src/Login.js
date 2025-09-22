@@ -22,23 +22,22 @@ function Login() {
     try {
       console.log("📩 Login request:", form);
 
+
       // ✅ Send login request
-      const res = await API.post("/auth/login", form);
+const res = await API.post("/auth/login", form);
 
       console.log("✅ Login response:", res.data);
 
       const accessToken =
         res.data?.accessToken || res.headers["x-access-token"];
-      const refreshToken =
-        res.data?.refreshToken || res.headers["x-refresh-token"];
       const user = res.data?.user;
 
-      if (!accessToken || !refreshToken || !user) {
+      if (!accessToken || !user) {
         throw new Error("Login failed: Missing tokens or user in response");
       }
 
       // ✅ Save tokens & user in AuthContext + localStorage
-      login(user, accessToken, refreshToken);
+      login(user, accessToken);
 
       console.log("🔑 Saved Access Token:", accessToken);
 

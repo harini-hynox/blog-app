@@ -1,6 +1,5 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "./AuthContext";
 import API from "./api";
 import NavBar from "./components/navBar";
 
@@ -8,30 +7,24 @@ function Signup() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  try {
-    // 🔹 Call backend signup
-    const res = await API.post("/auth/signup", form);
+    try {
+      const res = await API.post("/auth/signup", form);
+      console.log("✅ Signup success:", res.data.message);
 
-    // ✅ Show success message from backend
-    console.log("✅ Signup success:", res.data.message);
-
-    // 🔹 Redirect to login page instead of auto-login
-    navigate("/login");
-  } catch (err) {
-    console.error("❌ Signup error:", err);
-    setError(err.response?.data?.message || err.message || "Signup failed");
-  }
-};
-
+      navigate("/login");
+    } catch (err) {
+      console.error("❌ Signup error:", err.response?.data || err.message);
+      setError(err.response?.data?.message || "Signup failed");
+    }
+  };
 
   return (
     <div>

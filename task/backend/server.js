@@ -1,4 +1,3 @@
-// backend/server.js
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -18,7 +17,7 @@ app.use(
 );
 app.use(express.json());
 
-// ✅ Request Logger (for debugging)
+// ------------------- REQUEST LOGGER -------------------
 app.use((req, res, next) => {
   console.log(`➡️ [${req.method}] ${req.originalUrl}`);
   next();
@@ -34,7 +33,6 @@ mongoose
   .catch((err) => console.error("❌ MongoDB connection error:", err.message));
 
 // ------------------- SUPABASE -------------------
-// ⚠️ Service Role Key must only be used on backend
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -42,7 +40,7 @@ const supabase = createClient(
 
 // ------------------- ROUTES -------------------
 try {
-  const authRoutes = require("./routes/auth")(supabase); // pass supabase instance
+  const authRoutes = require("./routes/auth")(supabase);
   app.use("/api/auth", authRoutes);
   console.log("✅ Auth routes loaded");
 } catch (err) {

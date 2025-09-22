@@ -1,4 +1,3 @@
-// src/Task.js
 import React, { useState, useEffect, useContext } from "react";
 import NavBar from "./components/navBar";
 import { API, ExternalAPI } from "./api";
@@ -17,11 +16,20 @@ const Task = () => {
   const [editBody, setEditBody] = useState("");
   const { user } = useContext(AuthContext);
 
-  // ✅ Fetch tasks from backend
+  // ---------------- AUTH HEADER ----------------
+  const getAuthHeader = async () => {
+    if (!user) return {};
+    const { data: { session } } = await user.getSession?.(); // Supabase v2 session
+    const token = session?.access_token || user?.access_token;
+    return { headers: { Authorization: `Bearer ${token}` } };
+  };
+
+  // ---------------- FETCH TASKS ----------------
   const fetchTasks = async () => {
     if (!user) return;
     try {
-      const res = await API.get("/tasks"); // backend: /api/tasks
+      const config = await getAuthHeader();
+      const res = await API.get("/tasks", config);
       setTasks(res.data);
     } catch (err) {
       console.error("❌ Error fetching tasks:", err.response?.data || err.message);
@@ -29,14 +37,13 @@ const Task = () => {
     }
   };
 
-  // ✅ Fetch external posts (jsonplaceholder)
+  // ---------------- FETCH EXTERNAL POSTS ----------------
   const fetchExternalPosts = async () => {
     try {
-      // call "" (empty string), interceptor in api.js will prepend `/posts`
       const res = await ExternalAPI.get("");
       setExternalPosts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("❌ Error fetching external posts:", err.response?.data || err.message);
+      console.error("❌ Error fetching external posts:", err.message);
       setExternalPosts([]);
     }
   };
@@ -48,13 +55,14 @@ const Task = () => {
     }
   }, [user]);
 
-  // ✅ Add new task
+  // ---------------- ADD TASK ----------------
   const handleAddTask = async () => {
     if (!title || !body) return toast.error("Title and Body are required ❌");
-    if (!user) return toast.error("Login required to add tasks ❌");
+    if (!user) return toast.error("Login required ❌");
 
     try {
-      const res = await API.post("/tasks", { title, description: body });
+      const config = await getAuthHeader();
+      const res = await API.post("/tasks", { title, description: body }, config);
       setTasks((prev) => [...prev, res.data]);
       setTitle("");
       setBody("");
@@ -65,32 +73,35 @@ const Task = () => {
     }
   };
 
-  // ✅ Update task
+  // ---------------- UPDATE TASK ----------------
   const handleUpdateTask = async (id) => {
-    if (!user) return toast.error("Login required to update tasks ❌");
+    if (!user) return toast.error("Login required ❌");
     try {
-      const res = await API.put(`/tasks/${id}`, {
-        title: editTitle,
-        description: editBody,
-      });
+      const config = await getAuthHeader();
+      const res = await API.put(
+        `/tasks/${id}`,
+        { title: editTitle, description: editBody },
+        config
+      );
       setTasks((prev) =>
         prev.map((task) => (task._id === id ? res.data : task))
       );
       setEditingTaskId(null);
       setEditTitle("");
       setEditBody("");
-      toast.success("Task updated successfully ✏️");
+      toast.success("Task updated ✏️");
     } catch (err) {
       console.error("❌ Error updating task:", err.response?.data || err.message);
       toast.error("Failed to update task ❌");
     }
   };
 
-  // ✅ Delete task
+  // ---------------- DELETE TASK ----------------
   const handleDeleteTask = async (id) => {
-    if (!user) return toast.error("Login required to delete tasks ❌");
+    if (!user) return toast.error("Login required ❌");
     try {
-      await API.delete(`/tasks/${id}`);
+      const config = await getAuthHeader();
+      await API.delete(`/tasks/${id}`, config);
       setTasks((prev) => prev.filter((task) => task._id !== id));
       toast.success("Task deleted 🗑️");
     } catch (err) {
@@ -99,7 +110,6 @@ const Task = () => {
     }
   };
 
-  // ✅ Confirm delete with Toast
   const confirmDelete = (id) => {
     toast(
       ({ closeToast }) => (
@@ -128,7 +138,6 @@ const Task = () => {
     );
   };
 
-  // ✅ Filtered external posts
   const filteredPosts = externalPosts.filter((post) =>
     post.title?.toLowerCase().includes(search.toLowerCase())
   );

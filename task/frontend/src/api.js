@@ -1,50 +1,32 @@
-// src/api.js
 import axios from "axios";
-import { supabase } from "./supabaseClient"; // Ensure this path is correct
-
-// 🔹 Normalize base URLs to avoid trailing slashes
-const normalizeBaseURL = (url) => {
-  if (!url) return "";
-  return url.replace(/\/+$/, ""); // remove trailing slashes
-};
+import { supabase } from "./supabaseClient"; // Ensure path is correct
 
 // ---------------- BACKEND API ----------------
 export const API = axios.create({
-  baseURL:
-    normalizeBaseURL(process.env.REACT_APP_API_URL) ||
-    "http://localhost:5000/api",
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // ensures cookies are sent if needed
 });
 
-// ---------------- EXTERNAL API (jsonplaceholder) ----------------
+// ---------------- EXTERNAL API ----------------
 export const ExternalAPI = axios.create({
-  baseURL:
-    normalizeBaseURL(process.env.REACT_APP_EXTERNAL_API) ||
-    "https://jsonplaceholder.typicode.com",
+  baseURL: process.env.REACT_APP_EXTERNAL_API || "https://jsonplaceholder.typicode.com/posts",
 });
-
-// ✅ Ensure all external requests always start with `/posts`
-ExternalAPI.interceptors.request.use(
-  (config) => {
-    if (!config.url.startsWith("/posts")) {
-      config.url = `/posts${config.url}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // ---------------- INTERCEPTORS ----------------
-// Attach Supabase access token to every backend request
+
+// Attach Supabase access token to backend requests
 API.interceptors.request.use(
   async (config) => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-
       if (session?.access_token) {
         config.headers["Authorization"] = `Bearer ${session.access_token}`;
+        console.log("🔑 Attached token to request");
+      } else {
+        console.log("⚠️ No session token found");
       }
     } catch (err) {
       console.error("❌ Error attaching token:", err.message);
@@ -54,23 +36,20 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ---------------- RESPONSE HANDLING ----------------
+// Handle 401 unauthorized responses
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If token expired or unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
-
         if (!session?.user) {
-          // Redirect if no valid session
+          console.warn("⚠️ Unauthorized: redirecting to login");
           window.location.href = "/login";
         }
       } catch (err) {

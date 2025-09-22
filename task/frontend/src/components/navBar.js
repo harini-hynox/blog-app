@@ -4,11 +4,15 @@ import { AuthContext } from "../AuthContext";
 
 const NavBar = ({ page }) => {
   const navigate = useNavigate();
-  const { logout } = useContext(AuthContext);
+  const { logout, user } = useContext(AuthContext);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");  // Navigate after logout
+  const handleLogout = async () => {
+    try {
+      await logout(); // Supabase logout handled inside AuthContext
+      navigate("/login"); // Navigate after logout
+    } catch (err) {
+      console.error("❌ Logout failed:", err.message);
+    }
   };
 
   return (
@@ -33,7 +37,7 @@ const NavBar = ({ page }) => {
           </>
         )}
 
-        {page === "task" && (
+        {page === "task" && user && (
           <button
             className="px-4 py-2 text-xl text-customGray bg-white border rounded-md hover:text-white hover:bg-customGray no-underline"
             onClick={handleLogout}

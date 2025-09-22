@@ -1,84 +1,80 @@
+// src/api.js
 import axios from "axios";
+import { supabase } from "./supabaseClient"; // Ensure this path is correct
 
-// 🔹 Backend API instance
+// 🔹 Normalize base URLs to avoid trailing slashes
+const normalizeBaseURL = (url) => {
+  if (!url) return "";
+  return url.replace(/\/+$/, ""); // remove trailing slashes
+};
+
+// ---------------- BACKEND API ----------------
 export const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000",
+  baseURL:
+    normalizeBaseURL(process.env.REACT_APP_API_URL) ||
+    "http://localhost:5000/api",
   headers: { "Content-Type": "application/json" },
 });
 
-// 🔹 External API instance
+// ---------------- EXTERNAL API (jsonplaceholder) ----------------
 export const ExternalAPI = axios.create({
-  baseURL: process.env.REACT_APP_EXTERNAL_API || "https://jsonplaceholder.typicode.com",
+  baseURL:
+    normalizeBaseURL(process.env.REACT_APP_EXTERNAL_API) ||
+    "https://jsonplaceholder.typicode.com",
 });
 
-// ---------------- TOKEN MANAGEMENT ----------------
-let accessToken = localStorage.getItem("accessToken") || null;
-
-// Save access token from response
-const saveAccessToken = (res) => {
-  const newAccess =
-    res.data?.accessToken || res.headers["x-access-token"] || null;
-
-  if (newAccess) {
-    accessToken = newAccess;
-    localStorage.setItem("accessToken", newAccess);
-  }
-};
-
-// Clear access token and user info
-const clearTokens = () => {
-  accessToken = null;
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("user");
-};
-
-// ---------------- INTERCEPTORS ----------------
-// Attach access token to every request
-API.interceptors.request.use(
+// ✅ Ensure all external requests always start with `/posts`
+ExternalAPI.interceptors.request.use(
   (config) => {
-    if (accessToken) {
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
+    if (!config.url.startsWith("/posts")) {
+      config.url = `/posts${config.url}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Handle response: save access token or refresh if expired
-API.interceptors.response.use(
-  (res) => {
-    saveAccessToken(res);
-    return res;
+// ---------------- INTERCEPTORS ----------------
+// Attach Supabase access token to every backend request
+API.interceptors.request.use(
+  async (config) => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.access_token) {
+        config.headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+    } catch (err) {
+      console.error("❌ Error attaching token:", err.message);
+    }
+    return config;
   },
+  (error) => Promise.reject(error)
+);
+
+// ---------------- RESPONSE HANDLING ----------------
+API.interceptors.response.use(
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    // If token expired or unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        // Get userId from localStorage
-        const user = JSON.parse(localStorage.getItem("user"));
-        if (!user?.id) throw new Error("No user found for token refresh");
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-        // Call refresh endpoint (refresh token is in DB)
-        const res = await axios.post(
-          `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/auth/refresh`,
-          { userId: user.id },
-          { headers: { "Content-Type": "application/json" } }
-        );
-
-        saveAccessToken(res);
-
-        // Retry original request with new access token
-        originalRequest.headers[
-          "Authorization"
-        ] = `Bearer ${localStorage.getItem("accessToken")}`;
-
-        return API(originalRequest);
+        if (!session?.user) {
+          // Redirect if no valid session
+          window.location.href = "/login";
+        }
       } catch (err) {
-        console.error("❌ Refresh failed:", err.message);
-        clearTokens();
+        console.error("❌ Session fetch failed:", err.message);
         window.location.href = "/login";
       }
     }

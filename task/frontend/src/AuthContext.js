@@ -1,50 +1,133 @@
+// src/AuthContext.js
 import React, { createContext, useState, useEffect } from "react";
-import API from "./api";
+import { supabase } from "./supabaseClient"; // Supabase v2 client
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(
+    localStorage.getItem("accessToken") || null
+  );
   const [loading, setLoading] = useState(true);
 
-  // 🔹 On first load → restore user if available
+  // 🔹 On first load → check Supabase session
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const accessToken = localStorage.getItem("accessToken");
+    const initAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    if (storedUser && accessToken) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      setUser(null);
-    }
-    setLoading(false);
+      if (session?.user) {
+        const loggedUser = {
+          id: session.user.id,
+          email: session.user.email,
+          ...session.user.user_metadata,
+        };
+        setUser(loggedUser);
+        setAccessToken(session.access_token);
+        localStorage.setItem("accessToken", session.access_token);
+      } else {
+        setUser(null);
+        setAccessToken(null);
+        localStorage.removeItem("accessToken");
+      }
+
+      setLoading(false);
+    };
+
+    initAuth();
+
+    // 🔹 Listen to Supabase auth state changes (handles refresh automatically)
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          const loggedUser = {
+            id: session.user.id,
+            email: session.user.email,
+            ...session.user.user_metadata,
+          };
+          setUser(loggedUser);
+          setAccessToken(session.access_token);
+          localStorage.setItem("accessToken", session.access_token);
+        } else {
+          setUser(null);
+          setAccessToken(null);
+          localStorage.removeItem("accessToken");
+        }
+      }
+    );
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
-  // 🔹 Login → store accessToken + user (❌ no refreshToken here)
-  const login = (userData, accessToken) => {
-    if (accessToken) localStorage.setItem("accessToken", accessToken);
-    if (userData) localStorage.setItem("user", JSON.stringify(userData));
-    setUser(userData);
+  // 🔹 Login via Supabase
+  const login = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+
+    const loggedUser = {
+      id: data.user.id,
+      email: data.user.email,
+      ...data.user.user_metadata,
+    };
+
+    setUser(loggedUser);
+    setAccessToken(data.session.access_token);
+    localStorage.setItem("accessToken", data.session.access_token);
+
+    return loggedUser;
   };
 
-  // 🔹 Logout → clear everything + call backend
+  // 🔹 Signup via Supabase (auto-login)
+  const signup = async (email, password, extraMeta = {}) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: extraMeta }, // store name, role, etc. in user_metadata
+    });
+    if (error) throw error;
+
+    // some setups require email confirmation → session may be null
+    if (!data.session) {
+      return {
+        message: "Signup successful. Please check your email to confirm.",
+      };
+    }
+
+    const loggedUser = {
+      id: data.user.id,
+      email: data.user.email,
+      ...data.user.user_metadata,
+    };
+
+    setUser(loggedUser);
+    setAccessToken(data.session.access_token);
+    localStorage.setItem("accessToken", data.session.access_token);
+
+    return loggedUser;
+  };
+
+  // 🔹 Logout
   const logout = async () => {
     try {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      if (storedUser?.id) {
-        await API.post("/auth/logout", { userId: storedUser.id });
-      }
+      await supabase.auth.signOut();
     } catch (err) {
-      console.error("❌ Logout failed:", err.response?.data || err.message);
+      console.error("❌ Logout failed:", err.message);
     } finally {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
       setUser(null);
+      setAccessToken(null);
+      localStorage.removeItem("accessToken");
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, accessToken, login, signup, logout, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

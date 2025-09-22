@@ -1,6 +1,12 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const { createClient } = require("@supabase/supabase-js");
 
+// Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// Middleware to protect routes using Supabase JWT
 const auth = async (req, res, next) => {
   try {
     const authHeader = req.header("Authorization");
@@ -9,18 +15,17 @@ const auth = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     if (!token) return res.status(401).json({ message: "Token missing" });
 
-    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    // Verify token with Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    // Ensure token matches DB (prevent logout bypass)
-    const user = await User.findById(decoded.id);
-    if (!user || user.accessToken !== token)
-      return res.status(401).json({ message: "Invalid or expired token" });
+    if (error || !user) return res.status(401).json({ message: "Invalid or expired token" });
 
-    req.user = decoded;
+    req.user = user; // user.id is the Supabase user ID
     next();
   } catch (err) {
-    res.status(401).json({ message: "Token is invalid or expired" });
+    console.error("Supabase auth error:", err.message);
+    res.status(401).json({ message: "Authentication failed" });
   }
 };
 
-module.exports = auth;
+module.exports = { auth, supabase };

@@ -1,71 +1,153 @@
 const express = require("express");
-const auth = require("../middleware/auth");
 const Task = require("../models/Task");
+const { createClient } = require("@supabase/supabase-js");
 
 const router = express.Router();
 
-// Create Task
+// ✅ Supabase client (server-side only with SERVICE ROLE KEY)
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+// -------------------- AUTH MIDDLEWARE --------------------
+const auth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ message: "Missing or invalid Authorization header" });
+    }
+
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "Token missing" });
+    }
+
+    // ✅ Verify user from Supabase
+    const { data, error } = await supabase.auth.getUser(token);
+
+    if (error) {
+      console.error("❌ Supabase auth error:", error.message);
+      return res.status(401).json({ message: "Invalid or expired token" });
+    }
+
+    if (!data?.user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    req.user = data.user;
+    next();
+  } catch (err) {
+    console.error("❌ Auth middleware error:", err.message);
+    return res
+      .status(500)
+      .json({ message: "Auth check failed", error: err.message });
+  }
+};
+
+// -------------------- HEALTH CHECK --------------------
+router.get("/health", (req, res) => {
+  res.json({ status: "ok", message: "Tasks API is running 🚀" });
+});
+
+// -------------------- CREATE TASK --------------------
 router.post("/", auth, async (req, res) => {
   try {
     const { title, description, dueDate, priority } = req.body;
 
+    if (!title) return res.status(400).json({ message: "Title is required" });
+
     const task = new Task({
       title,
       description,
-      userId: req.user.id,
+      userId: req.user.id, // ✅ link task to logged-in user
       dueDate: dueDate || null,
       priority: priority || "medium",
     });
 
     await task.save();
-    res.status(201).json(task);
+    return res.status(201).json(task);
   } catch (err) {
-    res
+    console.error("❌ Error creating task:", err.message);
+    return res
       .status(500)
       .json({ message: "Error creating task", error: err.message });
   }
 });
 
-// Get All User Tasks (with optional filters)
+// -------------------- GET ALL TASKS --------------------
 router.get("/", auth, async (req, res) => {
   try {
     const { completed, priority } = req.query;
 
-    // Build dynamic filter
-    let filter = { userId: req.user.id };
-    if (completed !== undefined) filter.completed = completed === "true";
+    const filter = { userId: req.user.id };
+    if (completed === "true") filter.completed = true;
+    if (completed === "false") filter.completed = false;
     if (priority) filter.priority = priority;
 
     const tasks = await Task.find(filter).sort({ createdAt: -1 });
-    res.json(tasks);
+    return res.json(tasks);
   } catch (err) {
-    res
+    console.error("❌ Error fetching tasks:", err.message);
+    return res
       .status(500)
       .json({ message: "Error fetching tasks", error: err.message });
   }
 });
 
-// Update Task
+// -------------------- GET ONE TASK --------------------
+router.get("/:id", auth, async (req, res) => {
+  try {
+    const task = await Task.findOne({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
+
+    if (!task) return res.status(404).json({ message: "Task not found" });
+    return res.json(task);
+  } catch (err) {
+    console.error("❌ Error fetching task:", err.message);
+    return res
+      .status(500)
+      .json({ message: "Error fetching task", error: err.message });
+  }
+});
+
+// -------------------- UPDATE TASK --------------------
 router.put("/:id", auth, async (req, res) => {
   try {
-    const { title, description, completed, dueDate, priority } = req.body;
+    const allowedFields = [
+      "title",
+      "description",
+      "completed",
+      "dueDate",
+      "priority",
+    ];
+    const updates = {};
+
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
 
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
-      { title, description, completed, dueDate, priority },
+      updates,
       { new: true, runValidators: true }
     );
 
     if (!task) return res.status(404).json({ message: "Task not found" });
-    res.json(task);
+    return res.json(task);
   } catch (err) {
-    res
+    console.error("❌ Error updating task:", err.message);
+    return res
       .status(500)
       .json({ message: "Error updating task", error: err.message });
   }
 });
 
-// Delete Task
+// -------------------- DELETE TASK --------------------
 router.delete("/:id", auth, async (req, res) => {
   try {
     const task = await Task.findOneAndDelete({
@@ -74,9 +156,10 @@ router.delete("/:id", auth, async (req, res) => {
     });
 
     if (!task) return res.status(404).json({ message: "Task not found" });
-    res.json({ message: "Task deleted successfully" });
+    return res.json({ message: "Task deleted successfully" });
   } catch (err) {
-    res
+    console.error("❌ Error deleting task:", err.message);
+    return res
       .status(500)
       .json({ message: "Error deleting task", error: err.message });
   }

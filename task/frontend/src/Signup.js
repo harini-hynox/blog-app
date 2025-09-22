@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "./api";
+import { AuthContext } from "./AuthContext";
 import NavBar from "./components/navBar";
 
 function Signup() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
-  const [error, setError] = useState("");
+  const [error, setError] = useState("");   // ❌ Error messages
+  const [message, setMessage] = useState(""); // ✅ Success/info messages
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { signup } = useContext(AuthContext);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -14,15 +17,32 @@ function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setMessage("");
+    setLoading(true);
 
     try {
-      const res = await API.post("/auth/signup", form);
-      console.log("✅ Signup success:", res.data.message);
+      console.log("📩 Signup request:", form);
 
-      navigate("/login");
+      // 🔹 Use AuthContext signup
+      const result = await signup(form.email, form.password, {
+        username: form.username,
+      });
+
+      // if signup() returned a confirmation message (no session)
+      if (result?.message) {
+        console.warn("⚠️ Signup requires email confirmation.");
+        setMessage(result.message);
+        setTimeout(() => navigate("/login"), 2500);
+        return;
+      }
+
+      console.log("✅ Signup successful, redirecting to tasks...");
+      
     } catch (err) {
-      console.error("❌ Signup error:", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Signup failed");
+      console.error("❌ Signup error:", err.message);
+      setError(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,7 +54,10 @@ function Signup() {
           <h2 className="text-2xl font-bold mb-4 text-center text-gray-800">
             Signup
           </h2>
+
           {error && <p className="text-red-500 text-center mb-3">{error}</p>}
+          {message && <p className="text-green-600 text-center mb-3">{message}</p>}
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <input
               name="username"
@@ -65,9 +88,12 @@ function Signup() {
             />
             <button
               type="submit"
-              className="text-xl text-white bg-customGray border py-2 rounded-lg hover:bg-white hover:text-customGray transition"
+              disabled={loading}
+              className={`text-xl text-white bg-customGray border py-2 rounded-lg hover:bg-white hover:text-customGray transition ${
+                loading ? "bg-gray-400 cursor-not-allowed" : ""
+              }`}
             >
-              Signup
+              {loading ? "Signing up..." : "Signup"}
             </button>
           </form>
         </div>

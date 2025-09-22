@@ -1,7 +1,6 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
-import API from "./api";
 import NavBar from "./components/navBar";
 
 function Login() {
@@ -22,29 +21,16 @@ function Login() {
     try {
       console.log("📩 Login request:", form);
 
+      // 🔹 Use AuthContext login (handles Supabase + tokens)
+      const loggedUser = await login(form.email, form.password);
 
-      // ✅ Send login request
-const res = await API.post("/auth/login", form);
+      console.log("✅ Logged in:", loggedUser);
 
-      console.log("✅ Login response:", res.data);
-
-      const accessToken =
-        res.data?.accessToken || res.headers["x-access-token"];
-      const user = res.data?.user;
-
-      if (!accessToken || !user) {
-        throw new Error("Login failed: Missing tokens or user in response");
-      }
-
-      // ✅ Save tokens & user in AuthContext + localStorage
-      login(user, accessToken);
-
-      console.log("🔑 Saved Access Token:", accessToken);
-
-      navigate("/task");
+      // ✅ Redirect to /tasks
+      navigate("/tasks");
     } catch (err) {
-      console.error("❌ Login error:", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Invalid email or password");
+      console.error("❌ Login error:", err.message);
+      setError(err.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }

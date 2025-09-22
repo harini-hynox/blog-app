@@ -1,3 +1,4 @@
+// src/Task.js
 import React, { useState, useEffect, useContext } from "react";
 import NavBar from "./components/navBar";
 import { API, ExternalAPI } from "./api";
@@ -16,25 +17,26 @@ const Task = () => {
   const [editBody, setEditBody] = useState("");
   const { user } = useContext(AuthContext);
 
-  // ✅ Fetch tasks
+  // ✅ Fetch tasks from backend
   const fetchTasks = async () => {
+    if (!user) return;
     try {
-      const res = await API.get("/tasks");
+      const res = await API.get("/tasks"); // backend: /api/tasks
       setTasks(res.data);
     } catch (err) {
-      console.error("Error fetching tasks:", err.response?.data || err.message);
+      console.error("❌ Error fetching tasks:", err.response?.data || err.message);
       toast.error("Failed to fetch tasks ❌");
     }
   };
 
-  // ✅ Fetch external posts
+  // ✅ Fetch external posts (jsonplaceholder)
   const fetchExternalPosts = async () => {
     try {
-      const res = await ExternalAPI.get("/posts");
-      const posts = Array.isArray(res.data) ? res.data : res.data?.posts || [];
-      setExternalPosts(posts);
+      // call "" (empty string), interceptor in api.js will prepend `/posts`
+      const res = await ExternalAPI.get("");
+      setExternalPosts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error("Error fetching external posts:", err.response?.data || err.message);
+      console.error("❌ Error fetching external posts:", err.response?.data || err.message);
       setExternalPosts([]);
     }
   };
@@ -46,9 +48,10 @@ const Task = () => {
     }
   }, [user]);
 
-  // ✅ Add task
-  const handleAddPost = async () => {
+  // ✅ Add new task
+  const handleAddTask = async () => {
     if (!title || !body) return toast.error("Title and Body are required ❌");
+    if (!user) return toast.error("Login required to add tasks ❌");
 
     try {
       const res = await API.post("/tasks", { title, description: body });
@@ -57,43 +60,46 @@ const Task = () => {
       setBody("");
       toast.success("Task added successfully ✅");
     } catch (err) {
-      console.error("Error adding task:", err.response?.data || err.message);
+      console.error("❌ Error adding task:", err.response?.data || err.message);
       toast.error("Failed to add task ❌");
     }
   };
 
   // ✅ Update task
   const handleUpdateTask = async (id) => {
+    if (!user) return toast.error("Login required to update tasks ❌");
     try {
       const res = await API.put(`/tasks/${id}`, {
         title: editTitle,
         description: editBody,
       });
-
-      setTasks((prev) => prev.map((task) => (task._id === id ? res.data : task)));
+      setTasks((prev) =>
+        prev.map((task) => (task._id === id ? res.data : task))
+      );
       setEditingTaskId(null);
       setEditTitle("");
       setEditBody("");
       toast.success("Task updated successfully ✏️");
     } catch (err) {
-      console.error("Error updating task:", err.response?.data || err.message);
+      console.error("❌ Error updating task:", err.response?.data || err.message);
       toast.error("Failed to update task ❌");
     }
   };
 
   // ✅ Delete task
   const handleDeleteTask = async (id) => {
+    if (!user) return toast.error("Login required to delete tasks ❌");
     try {
       await API.delete(`/tasks/${id}`);
       setTasks((prev) => prev.filter((task) => task._id !== id));
       toast.success("Task deleted 🗑️");
     } catch (err) {
-      console.error("Error deleting task:", err.response?.data || err.message);
+      console.error("❌ Error deleting task:", err.response?.data || err.message);
       toast.error("Failed to delete task ❌");
     }
   };
 
-  // ✅ Confirm before delete
+  // ✅ Confirm delete with Toast
   const confirmDelete = (id) => {
     toast(
       ({ closeToast }) => (
@@ -122,7 +128,7 @@ const Task = () => {
     );
   };
 
-  // ✅ Filter external posts
+  // ✅ Filtered external posts
   const filteredPosts = externalPosts.filter((post) =>
     post.title?.toLowerCase().includes(search.toLowerCase())
   );
@@ -132,7 +138,7 @@ const Task = () => {
       <NavBar page="task" className="h-[15%]" />
 
       <div className="px-4 py-6 w-full">
-        {/* 🔍 Search */}
+        {/* Search */}
         <div className="flex h-[5%] flex-row items-center justify-center mb-6">
           <input
             type="text"
@@ -143,7 +149,7 @@ const Task = () => {
           />
         </div>
 
-        {/* ➕ Add Task */}
+        {/* Add Task */}
         <div className="flex flex-col h-[30%] items-center mb-6">
           <input
             type="text"
@@ -159,14 +165,14 @@ const Task = () => {
             className="w-[35%] h-[60%] p-2 mb-2 border rounded-md"
           />
           <button
-            onClick={handleAddPost}
+            onClick={handleAddTask}
             className="px-4 py-2 text-customGray bg-customPurple rounded-md hover:bg-white"
           >
-            Add Post
+            Add Task
           </button>
         </div>
 
-        {/* 🌍 External Posts */}
+        {/* External Posts */}
         <div className="h-[30%]">
           <h2 className="text-xl font-bold mb-2">External Posts</h2>
           <div className="flex overflow-x-auto gap-4 p-4 bg-customPurple rounded-md">
@@ -186,7 +192,7 @@ const Task = () => {
           </div>
         </div>
 
-        {/* ✅ Local Tasks */}
+        {/* Local Tasks */}
         <div className="h-[20%]">
           <h2 className="text-xl font-bold mt-6 mb-2">Your Tasks</h2>
           <div className="bg-customPurple rounded-md p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

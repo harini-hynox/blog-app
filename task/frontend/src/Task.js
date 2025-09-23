@@ -14,6 +14,7 @@ const Task = () => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const { user } = useContext(AuthContext);
 
   // ---------------- FETCH TASKS ----------------
@@ -31,7 +32,7 @@ const Task = () => {
   // ---------------- FETCH EXTERNAL POSTS ----------------
   const fetchExternalPosts = async () => {
     try {
-      const res = await ExternalAPI.get("");
+      const res = await ExternalAPI.get("/");
       setExternalPosts(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("❌ Error fetching external posts:", err.message);
@@ -45,6 +46,28 @@ const Task = () => {
       fetchExternalPosts();
     }
   }, [user]);
+
+  // ---------------- SEARCH LOGIC ----------------
+  useEffect(() => {
+    if (search.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
+
+    const externalMatches = externalPosts.filter(
+      (post) =>
+        post.title?.toLowerCase().includes(search.toLowerCase()) ||
+        post.body?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const taskMatches = tasks.filter(
+      (task) =>
+        task.title?.toLowerCase().includes(search.toLowerCase()) ||
+        task.description?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    setSearchResults([...externalMatches, ...taskMatches]);
+  }, [search, externalPosts, tasks]);
 
   // ---------------- ADD TASK ----------------
   const handleAddTask = async () => {
@@ -125,10 +148,6 @@ const Task = () => {
     );
   };
 
-  const filteredPosts = externalPosts.filter((post) =>
-    post.title?.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <div className="flex flex-col items-center w-screen min-h-screen bg-customLavender">
       <NavBar page="task" className="h-[15%]" />
@@ -168,95 +187,118 @@ const Task = () => {
           </button>
         </div>
 
-        {/* External Posts */}
-        <div className="h-[30%]">
-          <h2 className="text-xl font-bold mb-2">External Posts</h2>
-          <div className="flex overflow-x-auto gap-4 p-4 bg-customPurple rounded-md">
-            {filteredPosts.length ? (
-              filteredPosts.map((post) => (
+        {/* Conditional Rendering */}
+        {searchResults.length > 0 ? (
+          <div className="mt-6 w-full">
+            <h2 className="text-xl font-bold mb-2">Search Results</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {searchResults.map((post) => (
                 <div
                   key={post.id || post._id}
-                  className="min-w-[250px] p-4 bg-white rounded-lg shadow-md"
+                  className="p-4 bg-white rounded-lg shadow-md"
                 >
                   <h3 className="font-bold mb-2">{post.title}</h3>
-                  <p>{post.body}</p>
+                  <p>{post.body || post.description}</p>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No external posts found</p>
+              ))}
+            </div>
+            {searchResults.length === 0 && (
+              <p className="text-gray-500">No results found</p>
             )}
           </div>
-        </div>
+        ) : (
+          <>
+            {/* External Posts */}
+            <div className="h-[30%]">
+              <h2 className="text-xl font-bold mb-2">External Posts</h2>
+              <div className="flex overflow-x-auto gap-4 p-4 bg-customPurple rounded-md">
+                {externalPosts.length ? (
+                  externalPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="min-w-[250px] p-4 bg-white rounded-lg shadow-md"
+                    >
+                      <h3 className="font-bold mb-2">{post.title}</h3>
+                      <p>{post.body}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No external posts found</p>
+                )}
+              </div>
+            </div>
 
-        {/* Local Tasks */}
-        <div className="h-[20%]">
-          <h2 className="text-xl font-bold mt-6 mb-2">Your Tasks</h2>
-          <div className="bg-customPurple rounded-md p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tasks.length > 0 ? (
-              tasks.map((task) => (
-                <div
-                  key={task._id}
-                  className="p-4 bg-white rounded-lg shadow-md flex flex-col gap-2"
-                >
-                  {editingTaskId === task._id ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        className="w-full p-2 border rounded-md mb-2"
-                      />
-                      <textarea
-                        value={editBody}
-                        onChange={(e) => setEditBody(e.target.value)}
-                        className="w-full p-2 border rounded-md mb-2"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUpdateTask(task._id)}
-                          className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingTaskId(null)}
-                          className="px-3 py-1 bg-gray-400 text-white rounded-md hover:bg-gray-500"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="font-bold">{task.title}</h3>
-                      <p>{task.description}</p>
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={() => {
-                            setEditingTaskId(task._id);
-                            setEditTitle(task.title);
-                            setEditBody(task.description);
-                          }}
-                          className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => confirmDelete(task._id)}
-                          className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500">No tasks created yet</p>
-            )}
-          </div>
-        </div>
+            {/* Local Tasks */}
+            <div className="h-[20%]">
+              <h2 className="text-xl font-bold mt-6 mb-2">Your Tasks</h2>
+              <div className="bg-customPurple rounded-md p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {tasks.length > 0 ? (
+                  tasks.map((task) => (
+                    <div
+                      key={task._id}
+                      className="p-4 bg-white rounded-lg shadow-md flex flex-col gap-2"
+                    >
+                      {editingTaskId === task._id ? (
+                        <>
+                          <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="w-full p-2 border rounded-md mb-2"
+                          />
+                          <textarea
+                            value={editBody}
+                            onChange={(e) => setEditBody(e.target.value)}
+                            className="w-full p-2 border rounded-md mb-2"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleUpdateTask(task._id)}
+                              className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingTaskId(null)}
+                              className="px-3 py-1 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <h3 className="font-bold">{task.title}</h3>
+                          <p>{task.description}</p>
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => {
+                                setEditingTaskId(task._id);
+                                setEditTitle(task.title);
+                                setEditBody(task.description);
+                              }}
+                              className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => confirmDelete(task._id)}
+                              className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No tasks created yet</p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <ToastContainer position="top-center" />

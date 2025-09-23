@@ -202,9 +202,6 @@ const Task = () => {
                 </div>
               ))}
             </div>
-            {searchResults.length === 0 && (
-              <p className="text-gray-500">No results found</p>
-            )}
           </div>
         ) : (
           <>

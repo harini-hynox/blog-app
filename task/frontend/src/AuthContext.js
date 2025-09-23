@@ -25,6 +25,9 @@ export const AuthProvider = ({ children }) => {
           ...session.user.user_metadata,
         };
         setUser(loggedUser);
+
+        // ✅ Always use access_token
+        console.log("🔑 Initial session access_token:", session.access_token);
         setAccessToken(session.access_token);
         localStorage.setItem("accessToken", session.access_token);
       } else {
@@ -48,6 +51,8 @@ export const AuthProvider = ({ children }) => {
             ...session.user.user_metadata,
           };
           setUser(loggedUser);
+
+          console.log("🔄 Auth state change access_token:", session.access_token);
           setAccessToken(session.access_token);
           localStorage.setItem("accessToken", session.access_token);
         } else {
@@ -75,6 +80,8 @@ export const AuthProvider = ({ children }) => {
       ...data.user.user_metadata,
     };
 
+    console.log("✅ Login access_token:", data.session.access_token);
+
     setUser(loggedUser);
     setAccessToken(data.session.access_token);
     localStorage.setItem("accessToken", data.session.access_token);
@@ -82,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     return loggedUser;
   };
 
-  // 🔹 Signup via Supabase (auto-login)
+  // 🔹 Signup via Supabase (auto-login if no confirmation required)
   const signup = async (email, password, extraMeta = {}) => {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -103,6 +110,8 @@ export const AuthProvider = ({ children }) => {
       email: data.user.email,
       ...data.user.user_metadata,
     };
+
+    console.log("✅ Signup access_token:", data.session.access_token);
 
     setUser(loggedUser);
     setAccessToken(data.session.access_token);

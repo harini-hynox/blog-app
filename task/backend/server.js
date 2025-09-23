@@ -54,6 +54,9 @@ try {
 } catch (err) {
   console.error("❌ Failed to load task routes:", err.message);
 }
+const avatarRoutes = require("./routes/Avatar");
+app.use("/avatar", avatarRoutes);
+
 
 // ------------------- HEALTH CHECK -------------------
 app.get("/", (req, res) => {

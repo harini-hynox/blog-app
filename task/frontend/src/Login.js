@@ -21,13 +21,13 @@ function Login() {
     try {
       console.log("📩 Login request:", form);
 
-      // 🔹 Use AuthContext login (handles Supabase + tokens)
+      // 🔹 Call AuthContext login
       const loggedUser = await login(form.email, form.password);
 
       console.log("✅ Logged in:", loggedUser);
 
-      // ✅ Redirect to /tasks
-      navigate("/tasks");
+      // 🚀 Redirect to tasks page
+      navigate("/tasks", { replace: true });
     } catch (err) {
       console.error("❌ Login error:", err.message);
       setError(err.message || "Invalid email or password");
@@ -73,7 +73,7 @@ function Login() {
               className={`text-xl text-white border py-2 rounded-lg transition ${
                 loading
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-customGray hover:bg-white hover:text-customGray"
+                  : "bg-customGray hover:bg-white hover:text-gray-300"
               }`}
             >
               {loading ? "Logging in..." : "Login"}

@@ -2,26 +2,10 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import Signup from "./Signup";
 import Login from "./Login";
 import Task from "./Task";
+import Profile from "./Profile";   // ⬅️ import Profile page
 import PrivateRoute from "./PrivateRoute";
 import PublicRoute from "./PublicRoute";
-import { AuthProvider, AuthContext } from "./AuthContext";
-// import { useContext } from "react";
-
-// 🔹 Private Route → only for logged-in users
-// const PrivateRoute = ({ children }) => {
-//   const { user, loading } = useContext(AuthContext);
-
-//   if (loading) return <p>Loading...</p>;
-//   return user ? children : <Navigate to="/login" replace />;
-// };
-
-// // 🔹 Public Route → only for non-logged-in users
-// const PublicRoute = ({ children }) => {
-//   const { user, loading } = useContext(AuthContext);
-
-//   if (loading) return <p>Loading...</p>;
-//   return !user ? children : <Navigate to="/tasks" replace />;
-// };
+import { AuthProvider } from "./AuthContext";
 
 function App() {
   return (
@@ -52,6 +36,15 @@ function App() {
             element={
               <PrivateRoute>
                 <Task />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
               </PrivateRoute>
             }
           />

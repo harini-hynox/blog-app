@@ -28,7 +28,7 @@ function Signup() {
         username: form.username,
       });
 
-      // if signup() returned a confirmation message (no session)
+      // if signup() returned a confirmation message (no session yet)
       if (result?.message) {
         console.warn("⚠️ Signup requires email confirmation.");
         setMessage(result.message);
@@ -37,7 +37,8 @@ function Signup() {
       }
 
       console.log("✅ Signup successful, redirecting to tasks...");
-      
+      navigate("/tasks"); // 🚀 redirect user immediately
+
     } catch (err) {
       console.error("❌ Signup error:", err.message);
       setError(err.message || "Signup failed");
@@ -89,7 +90,7 @@ function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className={`text-xl text-white bg-customGray border py-2 rounded-lg hover:bg-white hover:text-customGray transition ${
+              className={`text-xl text-white bg-customGray border py-2 rounded-lg hover:bg-white hover:text-gray-300 transition ${
                 loading ? "bg-gray-400 cursor-not-allowed" : ""
               }`}
             >

@@ -16,20 +16,11 @@ const Task = () => {
   const [editBody, setEditBody] = useState("");
   const { user } = useContext(AuthContext);
 
-  // ---------------- AUTH HEADER ----------------
-  const getAuthHeader = async () => {
-    if (!user) return {};
-    const { data: { session } } = await user.getSession?.(); // Supabase v2 session
-    const token = session?.access_token || user?.access_token;
-    return { headers: { Authorization: `Bearer ${token}` } };
-  };
-
   // ---------------- FETCH TASKS ----------------
   const fetchTasks = async () => {
     if (!user) return;
     try {
-      const config = await getAuthHeader();
-      const res = await API.get("/tasks", config);
+      const res = await API.get("/tasks");
       setTasks(res.data);
     } catch (err) {
       console.error("❌ Error fetching tasks:", err.response?.data || err.message);
@@ -61,8 +52,7 @@ const Task = () => {
     if (!user) return toast.error("Login required ❌");
 
     try {
-      const config = await getAuthHeader();
-      const res = await API.post("/tasks", { title, description: body }, config);
+      const res = await API.post("/tasks", { title, description: body });
       setTasks((prev) => [...prev, res.data]);
       setTitle("");
       setBody("");
@@ -77,12 +67,10 @@ const Task = () => {
   const handleUpdateTask = async (id) => {
     if (!user) return toast.error("Login required ❌");
     try {
-      const config = await getAuthHeader();
-      const res = await API.put(
-        `/tasks/${id}`,
-        { title: editTitle, description: editBody },
-        config
-      );
+      const res = await API.put(`/tasks/${id}`, {
+        title: editTitle,
+        description: editBody,
+      });
       setTasks((prev) =>
         prev.map((task) => (task._id === id ? res.data : task))
       );
@@ -100,8 +88,7 @@ const Task = () => {
   const handleDeleteTask = async (id) => {
     if (!user) return toast.error("Login required ❌");
     try {
-      const config = await getAuthHeader();
-      await API.delete(`/tasks/${id}`, config);
+      await API.delete(`/tasks/${id}`);
       setTasks((prev) => prev.filter((task) => task._id !== id));
       toast.success("Task deleted 🗑️");
     } catch (err) {

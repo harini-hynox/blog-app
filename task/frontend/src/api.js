@@ -1,11 +1,11 @@
 import axios from "axios";
-import { supabase } from "./supabaseClient"; // Ensure path is correct
+import { supabase } from "./supabaseClient";
 
 // ---------------- BACKEND API ----------------
 export const API = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
   headers: { "Content-Type": "application/json" },
-  withCredentials: true, // ensures cookies are sent if needed
+  withCredentials: true,
 });
 
 // ---------------- EXTERNAL API ----------------
@@ -15,13 +15,14 @@ export const ExternalAPI = axios.create({
 
 // ---------------- INTERCEPTORS ----------------
 
-// Attach Supabase access token to backend requests
+// Attach Supabase access token automatically
 API.interceptors.request.use(
   async (config) => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+
       if (session?.access_token) {
         config.headers["Authorization"] = `Bearer ${session.access_token}`;
         console.log("🔑 Attached token to request");
@@ -36,7 +37,7 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401 unauthorized responses
+// Handle unauthorized responses
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -48,6 +49,7 @@ API.interceptors.response.use(
         const {
           data: { session },
         } = await supabase.auth.getSession();
+
         if (!session?.user) {
           console.warn("⚠️ Unauthorized: redirecting to login");
           window.location.href = "/login";

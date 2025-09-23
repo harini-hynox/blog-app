@@ -21,12 +21,12 @@ const auth = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     if (!token) return res.status(401).json({ message: "Token missing" });
 
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data?.user) {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
 
-    req.user = data.user;
+    req.user = user; // Supabase user object
     next();
   } catch (err) {
     console.error("❌ Auth middleware error:", err.message);
@@ -48,7 +48,7 @@ router.post("/", auth, async (req, res) => {
     const task = new Task({
       title,
       description,
-      userId: req.user.id,
+      userId: req.user.id, // Supabase UUID
       dueDate: dueDate || null,
       priority: priority || "medium",
     });

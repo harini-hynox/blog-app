@@ -3,14 +3,14 @@ import { supabase } from "./supabaseClient";
 
 // ---------------- BACKEND API ----------------
 export const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
+  baseURL: process.env.REACT_APP_API_URL,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
 
 // ---------------- EXTERNAL API ----------------
 export const ExternalAPI = axios.create({
-  baseURL: process.env.REACT_APP_EXTERNAL_API || "https://jsonplaceholder.typicode.com/posts",
+  baseURL: process.env.REACT_APP_EXTERNAL_API,
 });
 
 // ---------------- INTERCEPTORS ----------------

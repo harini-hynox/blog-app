@@ -95,7 +95,7 @@ const Task = () => {
         description: editBody,
       });
       setTasks((prev) =>
-        prev.map((task) => (task._id === id ? res.data : task))
+        prev.map((task) => (task.id === id ? res.data : task))
       );
       setEditingTaskId(null);
       setEditTitle("");
@@ -112,7 +112,7 @@ const Task = () => {
     if (!user) return toast.error("Login required ❌");
     try {
       await API.delete(`/tasks/${id}`);
-      setTasks((prev) => prev.filter((task) => task._id !== id));
+      setTasks((prev) => prev.filter((task) => task.id !== id));
       toast.success("Task deleted 🗑️");
     } catch (err) {
       console.error("❌ Error deleting task:", err.response?.data || err.message);
@@ -194,7 +194,7 @@ const Task = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {searchResults.map((post) => (
                 <div
-                  key={post.id || post._id}
+                  key={post.id}
                   className="p-4 bg-white rounded-lg shadow-md"
                 >
                   <h3 className="font-bold mb-2">{post.title}</h3>
@@ -232,10 +232,10 @@ const Task = () => {
                 {tasks.length > 0 ? (
                   tasks.map((task) => (
                     <div
-                      key={task._id}
+                      key={task.id}
                       className="p-4 bg-white rounded-lg shadow-md flex flex-col gap-2"
                     >
-                      {editingTaskId === task._id ? (
+                      {editingTaskId === task.id ? (
                         <>
                           <input
                             type="text"
@@ -250,7 +250,7 @@ const Task = () => {
                           />
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleUpdateTask(task._id)}
+                              onClick={() => handleUpdateTask(task.id)}
                               className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
                             >
                               Save
@@ -270,7 +270,7 @@ const Task = () => {
                           <div className="flex gap-2 mt-2">
                             <button
                               onClick={() => {
-                                setEditingTaskId(task._id);
+                                setEditingTaskId(task.id);
                                 setEditTitle(task.title);
                                 setEditBody(task.description);
                               }}
@@ -279,7 +279,7 @@ const Task = () => {
                               Edit
                             </button>
                             <button
-                              onClick={() => confirmDelete(task._id)}
+                              onClick={() => confirmDelete(task.id)}
                               className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
                             >
                               Delete

@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -10,7 +11,7 @@ const app = express();
 // ------------------- MIDDLEWARE -------------------
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: process.env.CLIENT_URL, // ✅ now set from .env
     credentials: true,
   })
 );
@@ -30,7 +31,7 @@ const supabase = createClient(
 
 // ------------------- ROUTES -------------------
 try {
-  const authRoutes = require("./routes/auth"); // ✅ FIXED
+  const authRoutes = require("./routes/auth");
   app.use("/api/auth", authRoutes);
   console.log("✅ Auth routes loaded");
 } catch (err) {
@@ -45,8 +46,9 @@ try {
   console.error("❌ Failed to load task routes:", err.message);
 }
 
+// ✅ FIXED: Avatar routes should also be under /api
 const avatarRoutes = require("./routes/Avatar");
-app.use("/avatar", avatarRoutes);
+app.use("/api/avatar", avatarRoutes);
 
 // ------------------- HEALTH CHECK -------------------
 app.get("/", (req, res) => {

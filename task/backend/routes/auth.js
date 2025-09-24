@@ -4,13 +4,13 @@ const { createClient } = require("@supabase/supabase-js");
 
 const router = express.Router();
 
-// ✅ Public client (anon key) → used for normal login/signup
+// ✅ Public client (anon key) → for login/signup
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
 
-// ✅ Admin client (service role key) → only for admin tasks (e.g., force confirm)
+// ✅ Admin client (service role key) → only for admin tasks
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -29,7 +29,9 @@ router.post("/signup", async (req, res) => {
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      options: {
+        email_confirm: true, // ✅ FIXED usage
+      },
     });
 
     if (error) {

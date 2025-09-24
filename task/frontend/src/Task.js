@@ -17,34 +17,32 @@ const Task = () => {
   const [searchResults, setSearchResults] = useState([]);
   const { user } = useContext(AuthContext);
 
-  // ---------------- FETCH TASKS ----------------
-  const fetchTasks = async () => {
-    if (!user) return;
-    try {
-      const res = await API.get("/tasks");
-      setTasks(res.data);
-    } catch (err) {
-      console.error("❌ Error fetching tasks:", err.response?.data || err.message);
-      toast.error("Failed to fetch tasks ❌");
-    }
-  };
-
-  // ---------------- FETCH EXTERNAL POSTS ----------------
-  const fetchExternalPosts = async () => {
-    try {
-      const res = await ExternalAPI.get("/");
-      setExternalPosts(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error("❌ Error fetching external posts:", err.message);
-      setExternalPosts([]);
-    }
-  };
-
+  // ---------------- FETCH TASKS & POSTS ----------------
   useEffect(() => {
-    if (user) {
-      fetchTasks();
-      fetchExternalPosts();
-    }
+    if (!user) return;
+
+    const fetchTasks = async () => {
+      try {
+        const res = await API.get("/tasks");
+        setTasks(res.data);
+      } catch (err) {
+        console.error("❌ Error fetching tasks:", err.response?.data || err.message);
+        toast.error("Failed to fetch tasks ❌");
+      }
+    };
+
+    const fetchExternalPosts = async () => {
+      try {
+        const res = await ExternalAPI.get("/");
+        setExternalPosts(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("❌ Error fetching external posts:", err.message);
+        setExternalPosts([]);
+      }
+    };
+
+    fetchTasks();
+    fetchExternalPosts();
   }, [user]);
 
   // ---------------- SEARCH LOGIC ----------------
@@ -193,10 +191,7 @@ const Task = () => {
             <h2 className="text-xl font-bold mb-2">Search Results</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {searchResults.map((post) => (
-                <div
-                  key={post.id}
-                  className="p-4 bg-white rounded-lg shadow-md"
-                >
+                <div key={post.id} className="p-4 bg-white rounded-lg shadow-md">
                   <h3 className="font-bold mb-2">{post.title}</h3>
                   <p>{post.body || post.description}</p>
                 </div>

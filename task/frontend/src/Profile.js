@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import { FaArrowLeft } from "react-icons/fa";
@@ -19,8 +19,8 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [hovering, setHovering] = useState(false);
 
-  // ✅ Fetch profile from backend
-  const fetchProfile = async () => {
+  // ✅ Fetch profile (memoized)
+  const fetchProfile = useCallback(async () => {
     if (!accessToken) return;
     try {
       const res = await fetch(`${API_BASE}/profile`, {
@@ -29,7 +29,6 @@ const Profile = () => {
 
       const data = await res.json();
       if (res.ok && data.profile) {
-        // 🔑 bust cache for avatar
         setProfile({
           ...data.profile,
           avatar_url: data.profile.avatar_url
@@ -42,11 +41,11 @@ const Profile = () => {
     } catch (err) {
       console.error("⚠️ Error fetching profile:", err.message);
     }
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     fetchProfile();
-  }, [accessToken]);
+  }, [fetchProfile]);
 
   // ✅ Upload avatar
   const handleUpload = async (e) => {
@@ -67,7 +66,6 @@ const Profile = () => {
       if (!res.ok) throw new Error(data.error || "Upload failed");
 
       if (data.profile) {
-        console.log("✅ Avatar updated:", data.profile.avatar_url);
         setProfile({
           ...data.profile,
           avatar_url: `${data.profile.avatar_url}?t=${Date.now()}`, // 🔑 force refresh
@@ -102,7 +100,6 @@ const Profile = () => {
       if (!res.ok) throw new Error(data.error || "Update failed");
 
       if (data.profile) {
-        console.log("✅ Profile updated:", data.profile);
         setProfile({
           ...data.profile,
           avatar_url: data.profile.avatar_url

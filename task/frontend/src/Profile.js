@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 import { FaArrowLeft } from "react-icons/fa";
 
-const API_BASE = "http://localhost:5000/avatar";
+// ✅ Use environment variable instead of hardcoding
+const API_BASE = `${process.env.REACT_APP_API_URL}/avatar`;
 
 const Profile = () => {
   const navigate = useNavigate();
